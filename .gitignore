@@ -9,5 +9,6 @@ env/
 venv/
 state_dump.json
 grid_dump.json
+ration_dump.json
 build_client_bundle.py
 *.log
