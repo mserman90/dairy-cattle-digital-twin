@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  agritwin-core:
+    build: .
+    container_name: agritwin-digital-twin-core
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - MQTT_BROKER_HOST=mqtt-broker
+      - MQTT_BROKER_PORT=1883
+      - DATABASE_URL=postgresql://agri:agritwin123@timescaledb:5432/dairy_twin
+    depends_on:
+      - mqtt-broker
+      - timescaledb
+    networks:
+      - agritwin-net
+
+  mqtt-broker:
+    image: eclipse-mosquitto:2
+    container_name: agritwin-mqtt-broker
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - mosquitto-data:/mosquitto/data
+    networks:
+      - agritwin-net
+
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    container_name: agritwin-timescale-tsdb
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=agri
+      - POSTGRES_PASSWORD=agritwin123
+      - POSTGRES_DB=dairy_twin
+    ports:
+      - "5432:5432"
+    volumes:
+      - timescale-data:/var/lib/postgresql/data
+    networks:
+      - agritwin-net
+
+networks:
+  agritwin-net:
+    driver: bridge
+
+volumes:
+  mosquitto-data:
+  timescale-data:

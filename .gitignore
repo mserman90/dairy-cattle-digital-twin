@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.env
+.venv/
+env/
+venv/
+state_dump.json
+grid_dump.json
+build_client_bundle.py
+*.log
