@@ -634,23 +634,47 @@ function initAcademicTooltips() {
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
 
-    let posX = e.clientX !== undefined ? e.clientX + 14 : rect.left + rect.width / 2;
-    let posY = e.clientY !== undefined ? e.clientY + 14 : rect.bottom + 8;
+    let posX = 0;
+    let posY = 0;
 
-    // Viewport right collision
-    if (posX + tipRect.width > viewportWidth - 16) {
-      posX = viewportWidth - tipRect.width - 16;
-    }
-    // Viewport left collision
-    if (posX < 12) posX = 12;
-
-    // Viewport bottom collision: flip above cursor
-    if (posY + tipRect.height > viewportHeight - 16) {
-      const altY = (e.clientY !== undefined ? e.clientY : rect.top) - tipRect.height - 14;
-      if (altY > 12) {
-        posY = altY;
+    const deviceCard = target.closest(".device-card");
+    if (deviceCard) {
+      const cardRect = deviceCard.getBoundingClientRect();
+      if (viewportWidth < 768) {
+        posX = 12;
+        if (cardRect.top > viewportHeight / 2) {
+          posY = 16;
+        } else {
+          posY = Math.max(16, viewportHeight - tipRect.height - 16);
+        }
       } else {
-        posY = viewportHeight - tipRect.height - 12;
+        // Desktop/Tablet: Position beside or above the card so it NEVER obscures text or buttons!
+        if (cardRect.right + tipRect.width + 16 <= viewportWidth) {
+          posX = cardRect.right + 12;
+          posY = Math.max(16, Math.min(cardRect.top, viewportHeight - tipRect.height - 16));
+        } else if (cardRect.left - tipRect.width - 16 >= 0) {
+          posX = cardRect.left - tipRect.width - 12;
+          posY = Math.max(16, Math.min(cardRect.top, viewportHeight - tipRect.height - 16));
+        } else if (cardRect.top >= tipRect.height + 16) {
+          posX = Math.max(12, Math.min(cardRect.left, viewportWidth - tipRect.width - 16));
+          posY = cardRect.top - tipRect.height - 12;
+        } else {
+          posX = Math.max(12, Math.min(cardRect.left, viewportWidth - tipRect.width - 16));
+          posY = Math.min(viewportHeight - tipRect.height - 16, cardRect.bottom + 12);
+        }
+      }
+    } else {
+      posX = e.clientX !== undefined ? e.clientX + 14 : rect.left + rect.width / 2;
+      posY = rect.top - tipRect.height - 10;
+      if (posY < 16) {
+        posY = rect.bottom + 12;
+      }
+      if (posX + tipRect.width > viewportWidth - 16) {
+        posX = viewportWidth - tipRect.width - 16;
+      }
+      if (posX < 12) posX = 12;
+      if (posY + tipRect.height > viewportHeight - 16) {
+        posY = Math.max(16, viewportHeight - tipRect.height - 16);
       }
     }
 
@@ -666,15 +690,25 @@ function initAcademicTooltips() {
 
   // Delegated event listener for all current and dynamically created elements
   document.addEventListener("mouseover", (e) => {
+    // Hide immediately when cursor is over any button, input or action control
+    if (e.target.closest("button, .btn, .device-btn-action, input, select, textarea, .modal-close, .close-btn")) {
+      hideTooltip();
+      return;
+    }
     const target = e.target.closest("[data-academic-key], [data-tooltip]");
-    if (target) {
+    // Ignore large parent containers so tooltips only trigger on explicit badges/labels
+    if (target && !target.classList.contains("device-card") && !target.classList.contains("cow-card")) {
       showTooltip(e, target);
     }
   });
 
   document.addEventListener("mousemove", (e) => {
+    if (e.target.closest("button, .btn, .device-btn-action, input, select, textarea, .modal-close, .close-btn")) {
+      hideTooltip();
+      return;
+    }
     const target = e.target.closest("[data-academic-key], [data-tooltip]");
-    if (target && academicTooltipEl && academicTooltipEl.classList.contains("active")) {
+    if (target && !target.classList.contains("device-card") && !target.classList.contains("cow-card") && academicTooltipEl && academicTooltipEl.classList.contains("active")) {
       positionTooltip(e, target);
     }
   });
@@ -3326,10 +3360,13 @@ function renderDevicesModal() {
     }
 
     cardsHtml += `
-      <div class="device-card" data-academic-key="${d.academic_key || 'edge_computing'}">
+      <div class="device-card">
         <div class="device-card-header">
           <div class="device-card-title">
-            <strong>${d.name}</strong>
+            <div style="display:flex; align-items:center; gap:0.45rem;">
+              <strong>${d.name}</strong>
+              <span class="device-academic-badge" data-academic-key="${d.academic_key || 'edge_computing'}" title="Akademik formül ve model referansı">🔬 Model</span>
+            </div>
             <span>${d.device_id}</span>
           </div>
           <span class="device-status-badge ${statusCls}">

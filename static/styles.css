@@ -4572,6 +4572,29 @@ table {
   font-family: var(--font-mono);
 }
 
+.device-academic-badge {
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  padding: 0.12rem 0.45rem;
+  border-radius: 9999px;
+  cursor: help;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+
+.device-academic-badge:hover {
+  background: rgba(56, 189, 248, 0.28);
+  border-color: #38bdf8;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.35);
+}
+
 .device-status-badge {
   display: inline-flex;
   align-items: center;
