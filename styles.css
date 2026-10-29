@@ -3653,3 +3653,247 @@ body {
 .btn-scenario:active {
   transform: translateY(1px);
 }
+
+
+/* ==========================================================================
+   PERFECT LAYOUT REGULARITY, TEXT & BUTTON SCREEN FITTING SYSTEM
+   ========================================================================== */
+
+/* Universal text and box safety */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* Ensure headings and paragraphs never overflow their parent container */
+h1, h2, h3, h4, h5, h6, .card-title, .modal-title {
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+/* Standardized Button Regularity & Flex Alignment */
+.btn, .btn-scenario, .prompt-chip, .status-pill, .demo-user-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  line-height: 1.25;
+  vertical-align: middle;
+}
+
+/* Ensure App Header wraps gracefully across all desktop and laptop resolutions */
+@media (max-width: 1440px) {
+  .app-header {
+    flex-wrap: wrap;
+    gap: 0.85rem 1.25rem;
+    padding: 1rem 1.4rem;
+  }
+  .header-brand {
+    flex: 1 1 auto;
+    min-width: 260px;
+  }
+  .header-status {
+    flex: 0 1 auto;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .header-actions {
+    flex: 1 1 100%;
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding-top: 0.75rem;
+    margin-top: 0.25rem;
+  }
+  .header-actions .btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+}
+
+/* Demo Banner Graceful Wrapping */
+.demo-banner {
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+}
+.demo-banner-content {
+  flex: 1 1 auto;
+  min-width: 240px;
+  overflow-wrap: break-word;
+}
+.demo-banner-actions {
+  flex: 0 1 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* Scenario Bar & Button Ergonomics */
+.scenario-bar {
+  overflow: hidden;
+}
+.scenario-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.btn-scenario {
+  white-space: normal;
+  line-height: 1.3;
+  text-align: left;
+  max-width: 100%;
+}
+
+/* Fluid Typography for KPI & Financial Numbers so they never break */
+.kpi-value {
+  font-size: clamp(1.2rem, 2.2vw, 1.6rem);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fin-item strong {
+  font-size: clamp(0.9rem, 1.8vw, 1.25rem);
+  white-space: nowrap;
+}
+
+/* Modal Header & Close Button Regularity */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.85rem;
+}
+.modal-header > div:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.modal-header h2 {
+  font-size: clamp(1rem, 2.2vw, 1.25rem);
+  line-height: 1.35;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+.modal-close {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+.modal-close:hover {
+  background: rgba(244, 63, 94, 0.2);
+  color: #fda4af;
+  border-color: rgba(244, 63, 94, 0.4);
+}
+
+/* Modal Footer Regularity & Mobile Stacking */
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .modal-footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 0.55rem;
+    padding: 0.85rem 1rem;
+  }
+  .modal-footer .btn {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+    white-space: normal;
+    line-height: 1.3;
+    padding: 0.6rem 1rem;
+    min-height: 42px;
+  }
+}
+
+/* Telemetry Strip on Mobile Herd Cards */
+@media (max-width: 540px) {
+  .telemetry-strip {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+  .card-top {
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    align-items: flex-start;
+  }
+  .cow-meta {
+    word-break: break-word;
+    line-height: 1.4;
+  }
+  .dss-summary-row {
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    line-height: 1.4;
+  }
+}
+
+/* Tooltip Mobile & Edge Safety */
+@media (max-width: 640px) {
+  [data-tooltip]::after {
+    max-width: min(230px, 75vw);
+    font-size: 0.68rem;
+    left: 0;
+    transform: translateY(4px);
+  }
+  [data-tooltip]:hover::after {
+    transform: translateY(0);
+  }
+}
+
+/* AI Assistant Input Bar Mobile Optimization */
+@media (max-width: 480px) {
+  .ai-input-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  .ai-input-bar input {
+    width: 100%;
+  }
+  .ai-input-bar .btn {
+    width: 100%;
+    justify-content: center;
+    min-height: 40px;
+  }
+  .btn-scenario {
+    max-width: 280px;
+    font-size: 0.72rem;
+  }
+}
+
+/* All Table Containers Horizontal Scrolling Safety */
+table {
+  max-width: 100%;
+}
+.report-content-box,
+.telemetry-comparison-table-wrapper,
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
