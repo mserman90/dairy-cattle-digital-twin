@@ -48,7 +48,7 @@
         <!-- Edge Network Status -->
         <button id="btnToggleEdge" class="status-pill edge-btn" onclick="toggleEdgeConnection()" title="Kırsal bağlantı kopması / Edge yerel tamponlama testi">
           <span class="edge-dot online" id="edgeDot"></span>
-          <span id="edgeStatusLabel">📡 Edge: Online</span>
+          <span id="edgeStatusLabel" data-academic-key="edge_computing">📡 Edge: Online</span>
         </button>
 
         <div class="status-pill">
@@ -247,7 +247,7 @@
       <!-- Left Column: Spatial RTLS Heatmap & Barn Digital Twin -->
       <section class="panel barn-spatial-panel">
         <div class="panel-header">
-          <h2>🗺️ Barınak RTLS Konum Takibi &amp; Mikroklima Isı Haritası (40m x 25m)</h2>
+          <h2 data-academic-key="edge_computing">🗺️ Barınak RTLS Konum Takibi &amp; Mikroklima Isı Haritası (40m x 25m)</h2>
           <span class="panel-tag" id="edgeModeBadge">Edge Gateway Aktif</span>
         </div>
 
@@ -376,7 +376,7 @@
         <!-- Wood Lactation Curve Visualization -->
         <div class="lactation-curve-section">
           <div class="curve-header">
-            <h3>📈 Wood Laktasyon Eğrisi Simülasyonu [y(t) = a · tᵇ · e⁻ᶜᵗ]</h3>
+            <h3 data-academic-key="wood_curve">📈 Wood Laktasyon Eğrisi Simülasyonu [y(t) = a · tᵇ · e⁻ᶜᵗ]</h3>
             <span class="curve-dim-badge" id="modalCurveDimBadge">DIM: -- Gün</span>
           </div>
           <div class="curve-chart-container">
@@ -392,7 +392,7 @@
         <!-- 3D Computer Vision AI (Lameness & BCS) -->
         <div class="vision-ai-section">
           <div class="vision-header">
-            <h3>📷 3D Derinlik Kamerası &amp; Yürüyüş Analizi (Computer Vision AI)</h3>
+            <h3 data-academic-key="bcs">📷 3D Derinlik Kamerası &amp; Yürüyüş Analizi (Computer Vision AI)</h3>
             <span class="vision-cam-badge">Kamera: CAM-EXIT-CHUTE-3D</span>
           </div>
 
@@ -400,7 +400,7 @@
             <!-- Lameness Box -->
             <div class="vision-box" id="visionLamenessBox">
               <div class="vision-box-header">
-                <strong>🦶 Topallık &amp; Sırt Kemerleşmesi (Lameness)</strong>
+                <strong data-academic-key="lameness">🦶 Topallık &amp; Sırt Kemerleşmesi (Lameness)</strong>
                 <span class="badge" id="visionLamenessBadge">Skor 1.0 (Normal)</span>
               </div>
               <div class="vision-metrics-row">
@@ -418,7 +418,7 @@
             <!-- BCS Box -->
             <div class="vision-box" id="visionBcsBox">
               <div class="vision-box-header">
-                <strong>🥩 Vücut Kondisyon Skoru (BCS)</strong>
+                <strong data-academic-key="bcs">🥩 Vücut Kondisyon Skoru (BCS)</strong>
                 <span class="badge" id="visionBcsBadge">BCS: 3.25</span>
               </div>
               <div class="vision-metrics-row">
@@ -439,7 +439,7 @@
         <div class="rumen-ai-section">
           <div class="rumen-header">
             <div class="rumen-title">
-              <h3>🧪 İntraruminal Bolus: Rumen pH Kinetiği &amp; SARA İkizi</h3>
+              <h3 data-academic-key="rumen_ph">🧪 İntraruminal Bolus: Rumen pH Kinetiği &amp; SARA İkizi</h3>
               <small>inSiliCow &amp; Dijkstra Biyokimyasal Rumen Modeli</small>
             </div>
             <span class="badge" id="rumenSaraBadge">SARA: Normal</span>
@@ -455,12 +455,12 @@
                 </div>
               </div>
               <div class="rumen-sub-metrics">
-                <div><span>Uçucu Yağ Asitleri (VFA):</span> <strong id="modalVfaVal">112 mmol/L</strong></div>
-                <div><span>Asetat / Propiyonat (A:P):</span> <strong id="modalApRatioVal">2.85 (Sağlıklı)</strong></div>
-                <div><span>Rumen Sıcaklığı:</span> <strong id="modalRumenTempVal">39.2°C</strong></div>
+                <div><span data-academic-key="vfa">Uçucu Yağ Asitleri (VFA):</span> <strong id="modalVfaVal">112 mmol/L</strong></div>
+                <div><span data-academic-key="ap_ratio">Asetat / Propiyonat (A:P):</span> <strong id="modalApRatioVal">2.85 (Sağlıklı)</strong></div>
+                <div><span data-academic-key="rumen_temp">Rumen Sıcaklığı:</span> <strong id="modalRumenTempVal">39.2°C</strong></div>
                 <div><span>Motilite / Kasılma:</span> <strong id="modalRumenMotilityVal">1.9 /dk</strong></div>
-                <div><span>pH &lt; 5.8 Süresi:</span> <strong id="modalHoursLowVal">0.0 sa/gün</strong></div>
-                <div><span>Tampon İhtiyacı:</span> <strong id="modalBufferNeedVal" style="color:var(--accent-emerald);">Gerek Yok</strong></div>
+                <div><span data-academic-key="sara">pH &lt; 5.8 Süresi:</span> <strong id="modalHoursLowVal">0.0 sa/gün</strong></div>
+                <div><span data-academic-key="buffer_need">Tampon İhtiyacı:</span> <strong id="modalBufferNeedVal" style="color:var(--accent-emerald);">Gerek Yok</strong></div>
               </div>
             </div>
 
@@ -479,7 +479,7 @@
         <div class="robotic-quarter-section">
           <div class="robotic-header">
             <div class="robotic-title">
-              <h3>🤖 Otonom Robotik Sağım &amp; 4 Loblu Çeyrek Meme İkizi</h3>
+              <h3 data-academic-key="conductivity">🤖 Otonom Robotik Sağım &amp; 4 Loblu Çeyrek Meme İkizi</h3>
               <small>DeLaval VMS &amp; Lely Astronaut Mimarisi | Hat İçi Spektrometre &amp; Bağımsız Süt Vanaları</small>
             </div>
             <span class="badge" id="roboticMilkingBadge">Robot Vana: 4 Lob Nominal</span>
@@ -521,7 +521,7 @@
               <strong id="robotDivertedYieldVal" style="color:#f43f5e;">-- kg</strong>
             </div>
             <div class="audit-item">
-              <span>Ağırlıklı Sürü SCC:</span>
+              <span data-academic-key="scc">Ağırlıklı Sürü SCC:</span>
               <strong id="robotWeightedSccVal">-- hücre/mL</strong>
             </div>
             <div class="audit-item wide">
@@ -591,7 +591,7 @@
       <div class="modal-header">
         <div>
           <span class="modal-tag">ÇOK AMAÇLI OPTİMİZASYON &amp; PARETO İKİZİ</span>
-          <h2>🌾 TMR Rasyon Formülasyonu &amp; Enterik Metan Azaltımı</h2>
+          <h2 data-academic-key="rufas_model">🌾 TMR Rasyon Formülasyonu &amp; Enterik Metan Azaltımı</h2>
         </div>
         <button class="modal-close" onclick="closeRationModalDirect()">&times;</button>
       </div>
@@ -606,7 +606,7 @@
         <div class="pareto-analysis-section">
           <div class="pareto-chart-card">
             <div class="pareto-chart-header">
-              <h3>📈 Pareto Sınırı: Rasyon Maliyeti vs. Metan Yoğunluğu (Maliyet - Karbon Eğrisi)</h3>
+              <h3 data-academic-key="rufas_model">📈 Pareto Sınırı: Rasyon Maliyeti vs. Metan Yoğunluğu (Maliyet - Karbon Eğrisi)</h3>
               <span class="badge" style="background:rgba(16,185,129,0.15); color:#10b981;">RuFaS &amp; IPCC Tier 2</span>
             </div>
             <svg id="paretoFrontierSvg" viewBox="0 0 540 180" class="pareto-svg"></svg>
@@ -666,7 +666,7 @@
       <div class="modal-header">
         <div>
           <span class="modal-tag">DÖNGÜSEL EKONOMİ &amp; NET-ZERO ENERJİ İKİZİ</span>
-          <h2>⚡ Gübre Biyogazı, Kojenerasyon (CHP) &amp; Şebeke Bağımsızlığı</h2>
+          <h2 data-academic-key="biogas_chp">⚡ Gübre Biyogazı, Kojenerasyon (CHP) &amp; Şebeke Bağımsızlığı</h2>
         </div>
         <button class="modal-close" onclick="closeEnergyModalDirect()">&times;</button>
       </div>
@@ -675,7 +675,7 @@
         <!-- Energy Self Sufficiency Hero Banner -->
         <div class="energy-hero-banner">
           <div class="hero-metric">
-            <span>ENERJİ ÖZ YETERLİLİK ORANI</span>
+            <span data-academic-key="biogas_chp">ENERJİ ÖZ YETERLİLİK ORANI</span>
             <strong id="energySelfSuffVal">%405 (NET-ZERO POZİTİF)</strong>
             <small>Çiftliğin tüm elektrik ihtiyacı kendi atığından karşılanmaktadır</small>
           </div>
@@ -794,7 +794,7 @@
       <div class="modal-header">
         <div>
           <span class="modal-tag">OTONOM AHIR OTOMASYONU &amp; FİLO İKİZİ</span>
-          <h2>🤖 Ahır İçi Otonom Robot Filosu (Yem İtici &amp; Gübre Vakum)</h2>
+          <h2 data-academic-key="juno_robot">🤖 Ahır İçi Otonom Robot Filosu (Yem İtici &amp; Gübre Vakum)</h2>
         </div>
         <button class="modal-close" onclick="closeRoboticsModalDirect()">&times;</button>
       </div>
@@ -910,7 +910,7 @@
       <div class="modal-header">
         <div>
           <span class="modal-tag">DOĞUMHANE, DİSTOSİ ERKEN UYARI &amp; BUZAĞI İKİZİ</span>
-          <h2>🤰 Doğumhane Yönetimi, Distosi (Güç Doğum) DSS &amp; Kolostrum Brix Analizi</h2>
+          <h2 data-academic-key="dystocia">🤰 Doğumhane Yönetimi, Distosi (Güç Doğum) DSS &amp; Kolostrum Brix Analizi</h2>
         </div>
         <button class="modal-close" onclick="closeCalvingModalDirect()">&times;</button>
       </div>
@@ -1065,7 +1065,7 @@
       <div class="modal-header">
         <div>
           <span class="modal-tag">GENOMİK SELEKSİYON, PEDİGRİ &amp; DİJİTAL ÇİFTLEŞTİRME İKİZİ</span>
-          <h2>🧬 Sürü Genomik Islah İndeksi, Akrabalık (Inbreeding) &amp; Akıllı Boğa Eşleştirmesi</h2>
+          <h2 data-academic-key="gebv">🧬 Sürü Genomik Islah İndeksi, Akrabalık (Inbreeding) &amp; Akıllı Boğa Eşleştirmesi</h2>
         </div>
         <button class="modal-close" onclick="closeGenomicsModalDirect()">&times;</button>
       </div>
@@ -1074,7 +1074,7 @@
         <!-- Herd Genomics KPI Bar -->
         <div class="genomics-kpi-bar">
           <div class="gen-kpi-item">
-            <span>Sürü Ort. Net Merit:</span>
+            <span data-academic-key="gebv">Sürü Ort. Net Merit:</span>
             <strong id="genHerdNmVal" style="color:#38bdf8;">$750 NM$</strong>
           </div>
           <div class="gen-kpi-item">

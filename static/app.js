@@ -374,10 +374,335 @@ let currentFarmState = null;
 let selectedAnimal = null;
 
 // Initialize on page load
+
+// ============================================================================
+// ACADEMIC TOOLTIP DICTIONARY & INTELLIGENT POSITIONING ENGINE
+// Standards: NASEM 2021, NRC 2001, ICAR, IDF, Wood (1967), Wright (1922)
+// ============================================================================
+const ACADEMIC_DICTIONARY = {
+  "sara": {
+    title: "Subakut Rumen Asidozu (SARA)",
+    standard: "Krause & Oetzel (2006) / Gozho et al.",
+    formula: "pH = -log₁₀[H⁺] • Eşik: pH < 5.80 (>180 dk/gün)",
+    range: "Fizyolojik: 6.20 - 6.80 | SARA Riski: < 5.80",
+    desc: "Yüksek nişastalı kesif yemlerin hızlı fermantasyonu sonucu rumende uçucu yağ asitlerinin (UYA) birikmesi, rumen epitelinde papilla hasarı, endotoksin salımı ve sistemik subklinik yangıya yol açan metabolik bozukluktur."
+  },
+  "rumen_ph": {
+    title: "İntraruminal pH Kinetiği",
+    standard: "NASEM (2021) Dairy NRC Standartları",
+    formula: "Kinetik eğri: Düşüş (yem sonrası) & Tamponlanma (geviş)",
+    range: "Optimum: 6.25 - 6.65 | Kritik Asidoz: < 5.50",
+    desc: "İntraruminal kablosuz bolus sensörü ile sürekli telemetrik izlenen işkembe asitlik derecesi. Selülolitik mikroorganizmaların yaşayabilmesi için pH'nın 6.0'ın üzerinde kalması şarttır."
+  },
+  "ap_ratio": {
+    title: "Asetat / Propiyonat (A:P) Mol Oranı",
+    standard: "Bauman & Griinari (2003) MFD Modeli",
+    formula: "A:P = Mol Asetat / Mol Propiyonat",
+    range: "Hedef Aralık: > 2.80 (İdeal: 3.0 - 3.5)",
+    desc: "Selülolitik (kaba yem) fermantasyonunun asetat, amilolitik (nişasta) fermantasyonunun propiyonat üretmesi esasına dayanır. Oranın 2.20 altına inmesi Süt Yağı Depresyonunu (MFD) tetikler."
+  },
+  "vfa": {
+    title: "Toplam Uçucu Yağ Asitleri (VFA / UYA)",
+    standard: "Van Soest (1994) Ruminant Besleme",
+    formula: "Toplam VFA = Asetat + Propiyonat + Bütirat + İzo-asitler",
+    range: "Normal: 80 - 140 mmol/L",
+    desc: "Ruminantın günlük net enerji (NEL) ihtiyacının %70-80'ini karşılayan ana mikrobiyal fermantasyon metabolitleridir."
+  },
+  "rumen_temp": {
+    title: "Rumen Retikulum Sıcaklığı",
+    standard: "Bewley et al. (2008) Biyotelemetri",
+    formula: "T_retikulum ≈ T_rektal + 0.5°C",
+    range: "Fizyolojik: 38.5°C - 39.5°C | Ateş / Yangı: > 39.8°C",
+    desc: "İşkembe iç sıcaklığı; su içme anında geçici düşüşler gösterir, sistemik enfeksiyon, mastitis veya sıcaklık stresinde bazal seviyenin üzerine çıkar."
+  },
+  "buffer_need": {
+    title: "Tampon Madde İhtiyacı (NaHCO₃)",
+    standard: "NRC (2001) / Erdman (1988)",
+    formula: "Dozaj = KM Tüketiminin %0.75 - %1.00'i",
+    range: "Normal: 0 g | Akut Asidoz Desteği: 150 - 250 g/baş/gün",
+    desc: "Rumende tükürük salgısının (bikarbonat ve fosfat) yetersiz kaldığı asidoz dönemlerinde pH'yı 6.20 bandına yükseltmek için rasyona eklenen sodyum bikarbonat desteğidir."
+  },
+  "dim": {
+    title: "Laktasyon Günü (DIM - Days in Milk)",
+    standard: "ICAR Laktasyon Kayıt Standardı",
+    formula: "DIM = Güncel Tarih - Buzağılama Tarihi",
+    range: "Pik: 45 - 90 gün | Standart Laktasyon: 305 gün",
+    desc: "İneğin buzağılamasından itibaren geçen gün sayısıdır. Süt verim eğrisi, kuru madde tüketimi kapasitesi ve negatif enerji dengesi (NEB) bu parametre üzerinden modellenir."
+  },
+  "bcs": {
+    title: "Vücut Kondisyon Skoru (BCS)",
+    standard: "Ferguson, Galligan & Thomsen (1994) / 1-5 Skalası",
+    formula: "3D Derinlik Kamerası & Omurga-Pelvis Hacim Analizi",
+    range: "Doğumda: 3.25 - 3.50 | Erken Laktasyonda: ≥ 2.75",
+    desc: "Deri altı yağ rezervlerinin 1.0 (aşırı kaşektik) ile 5.0 (aşırı obez) arasında skorlanmasıdır. Laktasyon başında 0.75 puandan fazla kayıp ketozis ve döl verimi düşüklüğüne yol açar."
+  },
+  "lameness": {
+    title: "Lokomosyon / Topallık Skoru",
+    standard: "Sprecher et al. (1997) 5'li Skala",
+    formula: "Computer Vision Omurga Eğriliği (Back Arch Index)",
+    range: "Skor 1 (Sağlıklı) | Skor 2 (Hafif) | Skor ≥ 3 (Klinik Topallık)",
+    desc: "İneğin yürürken ve dururken sırt çizgisi düzlüğü, adım uzunluğu ve basış simetrisinin yapay zeka ile analizi. Tırnak lezyonları ve dijital dermatiti erken aşamada yakalar."
+  },
+  "wood_curve": {
+    title: "Wood Laktasyon Eğrisi Modeli",
+    standard: "Wood (1967) Nature 216:164",
+    formula: "y(t) = a • tᵇ • e⁻ᶜᵗ",
+    range: "a: Başlangıç Verimi | b: Yükseliş Eğimi | c: Azalış (Persistency)",
+    desc: "Laktasyon süresince günlük süt verim dinamiğini tanımlayan gama fonksiyonu. İneğin genetik kapasitesi, pik verim günü (t_max = b/c) ve persistanlığını matematiksel olarak modeller."
+  },
+  "scc": {
+    title: "Somatik Hücre Sayısı (SCC / SHS)",
+    standard: "IDF Standard 148A / ICAR Süt Hijyeni",
+    formula: "Hücre / mL (Nötrofil granülositler ve dökülen epitel)",
+    range: "Sağlıklı: < 150.000 | Subklinik Mastitis: ≥ 200.000 | Klinik: > 400.000",
+    desc: "Meme bezinde yangı (mastitis) varlığının uluslararası altın standart göstergesidir. 200.000 eşiğinin aşılması, patojen istilasına karşı bağışıklık hücrelerinin süt kanallarına göç ettiğini gösterir."
+  },
+  "conductivity": {
+    title: "Süt Elektriksel İletkenliği (EC)",
+    standard: "Norberg et al. (2004) Robotik Sağım Telemetrisi",
+    formula: "mS/cm (MiliSiemens / santimetre)",
+    range: "Normal: 4.80 - 5.50 mS/cm | Mastitis İkazı: > 5.80 mS/cm",
+    desc: "Meme dokusu hasarında kan kapillerlerinden süte Na⁺ ve Cl⁻ sızıntısı artarken K⁺ azalır; artan iyon konsantrasyonu sütün elektriksel iletkenliğini yükselterek subklinik mastitisi haber verir."
+  },
+  "rumination": {
+    title: "Geviş Getirme Süresi (Rumination Time)",
+    standard: "Schirmann et al. (2009) / Beauchemin (2018)",
+    formula: "Dakika / 2 saat (Akustik mikrofon ve ivmeölçer tasma)",
+    range: "Fizyolojik: 35 - 45 dk/2sa (450 - 550 dk/gün) | Kritik: < 18 dk/2sa",
+    desc: "İşkembe doluluğu, peNDF (fiziksel efektif lif) sindirimi ve tükürükle tampon madde üretiminin doğrudan aynasıdır. Ani düşüşler metabolik sancı, SARA veya yaklaşan doğumu gösterir."
+  },
+  "thi": {
+    title: "Sıcaklık ve Nem İndeksi (THI - Heat Stress)",
+    standard: "NRC (1971) / Collier et al. (2012)",
+    formula: "THI = (1.8•T + 32) - (0.55 - 0.0055•RH)•(1.8•T - 26)",
+    range: "Konfor: < 68 | Hafif Stres: 68-71 | Orta: 72-77 | Şiddetli: ≥ 78",
+    desc: "Hava sıcaklığı ve bağıl nemin birleşik biyofiziksel etkisi. THI 68 üzerinde süt ineklerinde solunum sayısı artar, DMI düşer; 72 üzerinde süt verimi %10-15 geriler; 78 üzerinde asidoz ve abort riski doğar."
+  },
+  "methane": {
+    title: "Enterik Metan Emisyonu (CH₄)",
+    standard: "IPCC (2019) Tier 3 & RuFaS Mekanistik Modeli",
+    formula: "CO₂ + 4H₂ → CH₄ + 2H₂O (Metanojenik Archaea)",
+    range: "Ortalama: 380 - 450 g CH₄/gün (20 - 24 g CH₄/kg DMI)",
+    desc: "İşkembede karbonhidrat fermantasyonunda açığa çıkan hidrojenin mikroorganizmalarca metana dönüştürülmesidir. Rasyona nitrat, lipid veya kırmızı alg eklenerek %15-30 azaltılabilir."
+  },
+  "iofc": {
+    title: "Yem Üzeri Gelir (IOFC - Income Over Feed Cost)",
+    standard: "NASEM (2021) / Penn State Dairy Extension",
+    formula: "IOFC = (Süt Verimi × Süt Fiyatı) - Günlük TMR Yem Maliyeti",
+    range: "Hedef: > 140 ₺/baş/gün (Sürü ortalaması)",
+    desc: "Çiftlik brüt karlılığının en hassas operasyonel göstergesidir. Sabit genel giderler öncesi, her bir ineğin yediği yem maliyetini karşıladıktan sonra bıraktığı net marjinal geliri ifade eder."
+  },
+  "roi": {
+    title: "Dinamik Yatırım Geri Dönüşü (ROI)",
+    standard: "PLF (Hassas Hayvancılık) Ekonomik Modellemesi",
+    formula: "ROI = (Yıllık Net Katma Değer / Toplam PLF Yatırımı) × 100",
+    range: "Projeksiyon: 14 - 18 Ay Amortisman Süresi",
+    desc: "Sensörler, otonom robotlar, genomik seleksiyon ve erken teşhis DSS'in sağladığı yem tasarrufu, azalan veteriner giderleri ve korunan süt verimi ile sağlanan ekonomik geri dönüş oranıdır."
+  },
+  "inbreeding": {
+    title: "Akrabalık Katsayısı (Wright's F)",
+    standard: "Wright (1922) / VanRaden (1992)",
+    formula: "F = ∑ [(1/2)^(n₁+n₂+1) • (1 + F_A)] (IBD Olasılığı)",
+    range: "Güvenli: < 6.25% (Kuzen Eşleşmesi Altı) | Kritik: ≥ 6.25%",
+    desc: "Bireyin genomunda rastgele seçilen iki alelin ortak bir atadan miras kalma (Identity by Descent) olasılığıdır. Yüksek F değeri döl veriminde, doğum ağırlığında ve bağışıklıkta inbreeding depresyonuna yol açar."
+  },
+  "gebv": {
+    title: "Genomik Tahmini Damızlık Değeri (GEBV)",
+    standard: "Meuwissen et al. (2001) GBLUP & USDA-CDCB",
+    formula: "GEBV = ∑ (SNP_i × Marker_Effect_i)",
+    range: "Net Merit (NM$): > +850 $ | TPI: > 2800",
+    desc: "Hayvanın DNA'sındaki 50.000+ tek nükleotid polimorfizminin (SNP) genomik referans popülasyonu ile eğitilmiş Bayes/BLUP modelleriyle ekonomik özellikler yönünden damızlık değerinin hesaplanmasıdır."
+  },
+  "dystocia": {
+    title: "Distosi (Güç Doğum) DSS & PBTD",
+    standard: "Streyl et al. (2011) / Burfeind et al. (2011)",
+    formula: "PBTD: Doğumdan 12-24s önce Vücut Isısında -0.5°C ile -0.8°C düşüş",
+    range: "Distosi Skoru 1 (Kolay) | Skor 2 (Hafif Yardım) | Skor ≥ 3 (Müdahale)",
+    desc: "Luteoliz ve progesteron çekilmesiyle oluşan pre-partum sıcaklık düşüşü, gevişin durması ve ivmeölçer huzursuzluk verilerini birleştiren karar destek ikizi. Zamanında veteriner müdahalesi buzağı ölümlerini %85 önler."
+  },
+  "brix": {
+    title: "Kolostrum Brix Refraktometrisi & FPT",
+    standard: "Buczinski & Vandeweerd (2016) / McGuirk (2014)",
+    formula: "Brix % ≥ 22% ⇔ Kolostrum IgG ≥ 50 g/L",
+    range: "Mükemmel: ≥ 22% Brix | Yetersiz / Riskli: < 20% Brix",
+    desc: "Yeni doğan buzağının agammaglobulinemik doğması nedeniyle ilk 2-4 saatte kaliteli kolostrum alması hayati önem taşır. Brix ≥ %22, buzağıda Pasif Transfer Yetmezliğini (FPT - serum IgG < 10 g/L) kesin olarak engeller."
+  },
+  "icar_ade": {
+    title: "ICAR Animal Data Exchange (ADE) Standartı",
+    standard: "ICAR (International Committee for Animal Recording) v2.0",
+    formula: "ISO 11784/11785 RFID Kimliği & Standart Ontoloji",
+    range: "Uluslararası Uyumluluk: %100",
+    desc: "Dünya Hayvan Kayıt Komitesi'nin sürü yönetim sistemleri, sağım robotları ve ıslah birlikleri arasında veri entegrasyonu sağlayan resmi XML/JSON veri değişim protokolüdür."
+  },
+  "biogas_chp": {
+    title: "Biyogaz Anaerobik Çürütme & Kojenerasyon (CHP)",
+    standard: "VDI 4630 / IPCC Atık Yönetimi Metodolojisi",
+    formula: "CH₄ Verimi ≈ 0.25 - 0.35 m³ CH₄ / kg Organik Kuru Madde (VS)",
+    range: "Metan Oranı: %55 - %65 | Kojenerasyon Verimi: %86 (%38E + %48T)",
+    desc: "Sığır gübresinin oksijensiz ortamda mezofilik bakterilerce fermantasyonu sonucu elektrik ve ısı üretilmesidir. Çiftliğin kendi enerjisini karşılayarak net-sıfır karbon döngüsü kurmasını sağlar."
+  },
+  "juno_robot": {
+    title: "Otonom Yem İtici Robot (Lely Juno X İkizi)",
+    standard: "DeVries et al. (2005) TMR Yemleme Davranışı",
+    formula: "45 dk Periyodik İtme ⇒ DMI Artışı +%3.2",
+    range: "İtme Sıklığı: Günde 16 - 20 tur | Batarya: Li-ion Otonom Şarj",
+    desc: "Yemliğin önündeki TMR rasyonunu periyodik olarak ineklerin uzanma mesafesine iten otonom robot. Yem seçiciliğini (sorting) önler, rasyon asidozunu engeller ve kuru madde tüketimini stimüle eder."
+  },
+  "discovery_robot": {
+    title: "Otonom Gübre Vakum Robotu (Discovery Vac İkizi)",
+    standard: "Cook & Nordlund (2009) Tırnak Hijyeni Standartları",
+    formula: "Vakumlu Gübre Toplama ⇒ Zemin Amonyak Emisyonu -%45",
+    range: "Tank Kapasitesi: 400 L | Temizleme Verimi: 12.000 m²/gün",
+    desc: "Izgaralı veya düz ahır zeminlerindeki taze gübreyi su püskürterek vakumlayan ve biyogaz reaktörüne basan mobil robot. Çiftlikte dijital dermatit ve bulaşıcı tırnak enfeksiyonlarını önler."
+  },
+  "rufas_model": {
+    title: "RuFaS Çok Amaçlı Rasyon Optimizasyonu",
+    standard: "Ruminant Farm Systems (RuFaS) Konsorsiyumu",
+    formula: "min [Maliyet] & min [CH₄ Yoğunluğu] (Pareto Sınırı)",
+    range: "Metan Azalımı: -%16.4 | Yem Tasarrufu: +%14.2",
+    desc: "Kaba yem lif fraksiyonları (NDF/ADF), mikrobiyal protein sentezi ve rumen fermantasyon kinetiğini eşzamanlı simüle ederek hem minimum maliyet hem de minimum enterik sera gazı üreten rasyon denklemidir."
+  },
+  "smart_gate": {
+    title: "Robotik Otomatik Ayırma Kapısı (Smart Sorting Gate)",
+    standard: "ICAR Sağım & Sürü Sağlığı Entegrasyonu",
+    formula: "DSS Karar Matrisi ⇒ Normal: Ahır (Paddock) | İkaz: Revir / Karantina",
+    range: "Yanıt Süresi: < 350 ms | Doğruluk: %99.4",
+    desc: "Sağım robotundan veya yemlikten çıkan hayvanın UWB RFID künyesini okuyarak, DSS'in mastitis, estrus veya laktik asidoz alarmı verdiği inekleri sürüden izole edip revire ayıran pnömatik yönlendirme kapısıdır."
+  },
+  "edge_computing": {
+    title: "Yerel Ahır Uç Bilişim (Edge Computing Architecture)",
+    standard: "IEEE / Industrial IoT Standartları",
+    formula: "Gecikme (Latency) ≤ 15 ms • Çevrimdışı Çalışma Dayanıklılığı",
+    range: "Çevrimdışı Bellek: 72 Saat Tam Otonom",
+    desc: "İnternet kesilse dahi robotik ayırma kapısı, acil veteriner alarmı ve rasyon itme komutlarını yerel sunucuda sıfır gecikmeyle işleten bağımsız donanım mimarisidir."
+  }
+};
+
+let academicTooltipEl = null;
+
+function initAcademicTooltips() {
+  if (typeof document === "undefined") return;
+  if (!academicTooltipEl) {
+    academicTooltipEl = document.createElement("div");
+    academicTooltipEl.id = "academicTooltipFloatingCard";
+    academicTooltipEl.className = "academic-tooltip-floating";
+    document.body.appendChild(academicTooltipEl);
+  }
+
+  function showTooltip(e, target) {
+    const key = target.getAttribute("data-academic-key");
+    const customTip = target.getAttribute("data-tooltip");
+    let htmlContent = "";
+
+    if (key && ACADEMIC_DICTIONARY[key]) {
+      const item = ACADEMIC_DICTIONARY[key];
+      htmlContent = `
+        <div class="at-header">
+          <strong class="at-title">${item.title}</strong>
+          <span class="at-badge">${item.standard}</span>
+        </div>
+        <div class="at-body">
+          ${item.formula ? `<div class="at-formula">📐 <code>${item.formula}</code></div>` : ""}
+          ${item.range ? `<div class="at-range">🎯 ${item.range}</div>` : ""}
+          <div class="at-desc">${item.desc}</div>
+        </div>
+      `;
+    } else if (customTip) {
+      htmlContent = `
+        <div class="at-header">
+          <strong class="at-title">Akademik Bilgi & Parametre</strong>
+          <span class="at-badge">DİJİTAL İKİZ</span>
+        </div>
+        <div class="at-body">
+          <div class="at-desc">${customTip}</div>
+        </div>
+      `;
+    } else {
+      hideTooltip();
+      return;
+    }
+
+    academicTooltipEl.innerHTML = htmlContent;
+    academicTooltipEl.classList.add("active");
+    positionTooltip(e, target);
+  }
+
+  function positionTooltip(e, target) {
+    if (!academicTooltipEl || !academicTooltipEl.classList.contains("active")) return;
+    const rect = target.getBoundingClientRect();
+    const tipRect = academicTooltipEl.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    let posX = e.clientX !== undefined ? e.clientX + 14 : rect.left + rect.width / 2;
+    let posY = e.clientY !== undefined ? e.clientY + 14 : rect.bottom + 8;
+
+    // Viewport right collision
+    if (posX + tipRect.width > viewportWidth - 16) {
+      posX = viewportWidth - tipRect.width - 16;
+    }
+    // Viewport left collision
+    if (posX < 12) posX = 12;
+
+    // Viewport bottom collision: flip above cursor
+    if (posY + tipRect.height > viewportHeight - 16) {
+      const altY = (e.clientY !== undefined ? e.clientY : rect.top) - tipRect.height - 14;
+      if (altY > 12) {
+        posY = altY;
+      } else {
+        posY = viewportHeight - tipRect.height - 12;
+      }
+    }
+
+    academicTooltipEl.style.left = `${Math.round(posX)}px`;
+    academicTooltipEl.style.top = `${Math.round(posY)}px`;
+  }
+
+  function hideTooltip() {
+    if (academicTooltipEl) {
+      academicTooltipEl.classList.remove("active");
+    }
+  }
+
+  // Delegated event listener for all current and dynamically created elements
+  document.addEventListener("mouseover", (e) => {
+    const target = e.target.closest("[data-academic-key], [data-tooltip]");
+    if (target) {
+      showTooltip(e, target);
+    }
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    const target = e.target.closest("[data-academic-key], [data-tooltip]");
+    if (target && academicTooltipEl && academicTooltipEl.classList.contains("active")) {
+      positionTooltip(e, target);
+    }
+  });
+
+  document.addEventListener("mouseout", (e) => {
+    const target = e.target.closest("[data-academic-key], [data-tooltip]");
+    if (target) {
+      hideTooltip();
+    }
+  });
+
+  // Touch / Mobile Support
+  document.addEventListener("click", (e) => {
+    const target = e.target.closest("[data-academic-key], [data-tooltip]");
+    if (target) {
+      showTooltip(e, target);
+    } else {
+      hideTooltip();
+    }
+  });
+}
+
+
 document.addEventListener("DOMContentLoaded", () => {
   fetchFarmState();
   fetchSpatialRtls();
   startAutoPoll();
+  initAcademicTooltips();
 });
 
 function startAutoPoll() {
@@ -872,26 +1197,26 @@ function renderUI(state) {
           <span style="font-size: 1.2rem;">🐄</span>
           <div>
             <strong>${animal.name}</strong> <span style="font-family: var(--font-mono); font-size:0.8rem; color: var(--text-muted);">(${animal.id})</span>
-            <div class="cow-meta">Lakt ${animal.lactation_number} • DIM: ${animal.days_in_milk}g • <strong>BCS: ${bcsVal}</strong> • <strong style="color:${isLameAlert ? 'var(--accent-rose)' : 'inherit'};">Topallık: Skor ${lameVal}</strong> • <strong style="color:${isSara ? 'var(--accent-rose)' : '#38bdf8'};">pH: ${rumenPh}</strong></div>
+            <div class="cow-meta">Lakt ${animal.lactation_number} • <span data-academic-key="dim">DIM: ${animal.days_in_milk}g</span> • <strong data-academic-key="bcs">BCS: ${bcsVal}</strong> • <strong data-academic-key="lameness" style="color:${isLameAlert ? 'var(--accent-rose)' : 'inherit'};">Topallık: Skor ${lameVal}</strong> • <strong data-academic-key="rumen_ph" style="color:${isSara ? 'var(--accent-rose)' : '#38bdf8'};">pH: ${rumenPh}</strong></div>
           </div>
         </div>
-        <span class="status-badge ${statusClass}">${badgeLabel}</span>
+        <span class="status-badge ${statusClass}" data-academic-key="${isSara ? 'sara' : (isLame ? 'lameness' : 'scc')}">${badgeLabel}</span>
       </div>
 
       <div class="telemetry-strip">
-        <div class="telem-item ${isHighCond ? 'alert-val' : ''}">
+        <div class="telem-item ${isHighCond ? 'alert-val' : ''}" data-academic-key="conductivity">
           <span>İletkenlik:</span>
           <strong>${animal.latest_milking.conductivity_ms_cm.toFixed(2)} mS/cm</strong>
         </div>
-        <div class="telem-item ${isLowRum ? 'alert-val' : ''}">
+        <div class="telem-item ${isLowRum ? 'alert-val' : ''}" data-academic-key="rumination">
           <span>Geviş Süresi:</span>
           <strong>${animal.telemetry.rumination_minutes_2h} dk/2sa</strong>
         </div>
-        <div class="telem-item ${isHighTemp ? 'alert-val' : ''}">
+        <div class="telem-item ${isHighTemp ? 'alert-val' : ''}" data-academic-key="rumen_temp">
           <span>Vücut Isısı:</span>
           <strong>${animal.telemetry.body_temperature_c.toFixed(1)}°C</strong>
         </div>
-        <div class="telem-item ${isHighAct ? 'warning-val' : ''}">
+        <div class="telem-item ${isHighAct ? 'warning-val' : ''}" data-academic-key="dystocia">
           <span>Aktivite:</span>
           <strong>${animal.telemetry.activity_index} adım/sa</strong>
         </div>
