@@ -635,10 +635,15 @@ function renderRtlsMap(gridData) {
     const dotColor = isCritical ? "#f43f5e" : "#10b981";
 
     cowElements += `
-      <circle cx="${px}" cy="${py}" r="7" fill="${dotColor}" stroke="#ffffff" stroke-width="2" />
-      <text x="${px}" y="${py - 9}" fill="#f1f5f9" font-size="9" font-weight="bold" text-anchor="middle">
-        🐄 ${p.name}
-      </text>
+      <g style="cursor: pointer;" onclick="openXaiModal('${p.animal_id}')">
+        <title>${p.name} (${p.animal_id}) • Sağlık: ${p.health_status === 'CRITICAL' ? 'Acil / Revir' : 'Sağlıklı'} • XAI Detayı için tıklayın</title>
+        ${isCritical ? `<circle cx="${px}" cy="${py}" r="14" class="radar-pulse-ring" fill="none" stroke="#f43f5e" stroke-width="1.8" />` : ''}
+        <circle cx="${px}" cy="${py}" r="7.5" fill="${dotColor}" stroke="#ffffff" stroke-width="2" />
+        <rect x="${px - 26}" y="${py - 20}" width="52" height="13" rx="3" fill="rgba(15,23,42,0.85)" stroke="rgba(255,255,255,0.18)" stroke-width="0.5"/>
+        <text x="${px}" y="${py - 10}" fill="#f1f5f9" font-size="8.5" font-weight="600" text-anchor="middle">
+          🐄 ${p.name}
+        </text>
+      </g>
     `;
   });
 
@@ -649,10 +654,12 @@ function renderRtlsMap(gridData) {
       const rx = rob.pusher.x_m * scaleX;
       const ry = rob.pusher.y_m * scaleY;
       robotElements += `
-        <g transform="translate(${rx.toFixed(1)}, ${ry.toFixed(1)})">
-          <circle cx="0" cy="0" r="11" fill="rgba(56,189,248,0.4)" stroke="#38bdf8" stroke-width="2"/>
+        <g transform="translate(${rx.toFixed(1)}, ${ry.toFixed(1)})" style="cursor: pointer;" onclick="openRoboticsModal()">
+          <title>Juno-X Otonom Yem İtici • Batarya: %${rob.pusher.battery_pct} • Filo Yönetimi için tıklayın</title>
+          <circle cx="0" cy="0" r="12" fill="rgba(56,189,248,0.35)" stroke="#38bdf8" stroke-width="2"/>
           <text x="0" y="4" font-size="11" text-anchor="middle">🚜</text>
-          <text x="0" y="-13" fill="#38bdf8" font-size="8" font-weight="bold" text-anchor="middle">Juno (Yem)</text>
+          <rect x="-30" y="-23" width="60" height="12" rx="3" fill="rgba(15,23,42,0.85)" stroke="#38bdf8" stroke-width="0.5"/>
+          <text x="0" y="-14" fill="#38bdf8" font-size="7.5" font-weight="bold" text-anchor="middle">Juno (Yem)</text>
         </g>
       `;
     }
@@ -660,10 +667,12 @@ function renderRtlsMap(gridData) {
       const mx = rob.collector.x_m * scaleX;
       const my = rob.collector.y_m * scaleY;
       robotElements += `
-        <g transform="translate(${mx.toFixed(1)}, ${my.toFixed(1)})">
-          <circle cx="0" cy="0" r="11" fill="rgba(245,158,11,0.4)" stroke="#f59e0b" stroke-width="2"/>
+        <g transform="translate(${mx.toFixed(1)}, ${my.toFixed(1)})" style="cursor: pointer;" onclick="openRoboticsModal()">
+          <title>Discovery-Vac Otonom Gübre Robotu • Tank: %${rob.collector.tank_fill_pct} • Filo Yönetimi için tıklayın</title>
+          <circle cx="0" cy="0" r="12" fill="rgba(245,158,11,0.35)" stroke="#f59e0b" stroke-width="2"/>
           <text x="0" y="4" font-size="11" text-anchor="middle">🧹</text>
-          <text x="0" y="19" fill="#f59e0b" font-size="8" font-weight="bold" text-anchor="middle">Discovery (Gübre)</text>
+          <rect x="-40" y="10" width="80" height="12" rx="3" fill="rgba(15,23,42,0.85)" stroke="#f59e0b" stroke-width="0.5"/>
+          <text x="0" y="19" fill="#f59e0b" font-size="7.5" font-weight="bold" text-anchor="middle">Discovery (Gübre)</text>
         </g>
       `;
     }
