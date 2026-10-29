@@ -18,6 +18,7 @@ from robotic_milking_twin import RoboticMilkingEngine
 from biogas_energy_twin import CircularBiogasEnergyEngine
 from barn_robotics_twin import robotics_fleet_engine
 from calving_twin import CalvingDystociaEngine
+from farm_devices_twin import farm_devices_engine
 from genomic_breeding_twin import GenomicBreedingEngine
 
 class FarmSimulator:
@@ -715,6 +716,21 @@ class FarmSimulator:
         # Genomik Seleksiyon & Çiftleştirme İkizi (Faz 13)
         genomics_summary = GenomicBreedingEngine.get_herd_genomic_summary()
 
+        # Çiftlik Cihazları & IoT Donanım Filosu İkizi (Faz 18)
+        treated_count = len(edge_gateway.state.active_treatments) if edge_gateway.state else 0
+        crit_cows = sum(1 for a in self.animals if a.dss.overall_health_status == "CRITICAL")
+        max_thi = max((z.thi_index for z in self.zones), default=70.0)
+        avg_temp = sum(z.temperature_c for z in self.zones) / max(1, len(self.zones))
+        avg_rh = sum(z.relative_humidity_pct for z in self.zones) / max(1, len(self.zones))
+        devices_profile = farm_devices_engine.tick_all_devices(
+            ambient_temp_c=avg_temp,
+            ambient_rh_pct=avg_rh,
+            thi_index=max_thi,
+            treated_cows_count=treated_count,
+            active_critical_cows=crit_cows,
+            heatwave_active=(self.active_scenario == "heatwave")
+        )
+
         return FarmTwinState(
             farm_name="AgriTwin Akıllı Süt Çiftliği Dijital İkizi (Faz 4: Endüstriyel)",
             simulation_tick=self.simulation_tick,
@@ -732,7 +748,8 @@ class FarmSimulator:
             energy=energy_profile,
             robotics=robotics_profile,
             maternity=maternity_summary,
-            genomics=genomics_summary
+            genomics=genomics_summary,
+            devices=devices_profile
         )
 
 # Global singleton instance

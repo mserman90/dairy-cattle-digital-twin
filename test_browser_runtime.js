@@ -50,8 +50,10 @@ global.document = {
 global.window = {
   addEventListener: (event, cb) => {},
   setInterval: () => {},
-  clearInterval: () => {}
+  clearInterval: () => {},
+  alert: (msg) => {}
 };
+global.alert = (msg) => {};
 
 global.fetch = () => Promise.reject(new Error("Simulating Offline/GitHub Pages static mode"));
 global.navigator = { clipboard: { writeText: () => Promise.resolve() } };
@@ -205,6 +207,17 @@ openGenomicsModal().then(() => {
   startGuidedDemoTour();
   console.log("  Tour launched, AI response updated?", getMockElement("aiChatResponse").innerHTML.includes("AgriTwin Rehberli Demo Turu"));
   quickLaunchDemo("ration");
+
+  // 17. Farm Devices Fleet Modal & Actuators
+  console.log("Testing 17. Farm Devices Fleet Modal & Actuator Actions...");
+  openDevicesModal();
+  console.log("  devicesModal active?", getMockElement("devicesModal").classList.contains("active"));
+  filterDeviceCategory("ROBOTICS");
+  sendDeviceAction("DEV-PUSHER-01", "ROTATE_AUGER");
+  sendDeviceAction("DEV-AMS-01", "STEAM_CLEAN");
+  sendDeviceAction("DEV-MISTING-SYS", "PULSE_MIST");
+  closeDevicesModalDirect();
+  console.log("  devicesModal closed?", !getMockElement("devicesModal").classList.contains("active"));
 
   console.log("\n>>> ALL TESTS COMPLETED SUCCESSFULLY! <<<");
 }).catch(err => {

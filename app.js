@@ -943,12 +943,21 @@ function renderRtlsMap(gridData) {
   });
 
   let fanElements = "";
-  gridData.fans.forEach(f => {
+  const maxThiVal = currentFarmState && currentFarmState.barn_zones ? Math.max(...currentFarmState.barn_zones.map(z => z.thi_index)) : 70;
+  const isFanFast = maxThiVal >= 78.0;
+  const isFanMedium = maxThiVal >= 72.0;
+  const fanAnimClass = isFanFast ? "spinning-fan-fast" : (isFanMedium ? "spinning-fan-medium" : "");
+
+  gridData.fans.forEach((f, fIdx) => {
     const fx = f.x * scaleX;
     const fy = f.y * scaleY;
     fanElements += `
-      <circle cx="${fx}" cy="${fy}" r="14" fill="rgba(56,189,248,0.25)" stroke="#38bdf8" stroke-width="1.5" />
-      <text x="${fx}" y="${fy + 4}" fill="#38bdf8" font-size="12" text-anchor="middle">🌀</text>
+      <g style="cursor: pointer;" onclick="openDevicesModal()">
+        <title>HVLS Tavan Fanı #${fIdx + 1} • ${isFanFast ? '350 RPM (Maksimum)' : (isFanMedium ? '220 RPM (Orta Hız)' : 'Beklemede')} • Cihaz Paneli için tıklayın</title>
+        <circle cx="${fx}" cy="${fy}" r="15" fill="rgba(56,189,248,0.18)" stroke="#38bdf8" stroke-width="1.5" />
+        <text x="${fx}" y="${fy + 4}" fill="#38bdf8" font-size="13" text-anchor="middle" class="${fanAnimClass}">🌀</text>
+        ${isFanFast ? `<circle cx="${fx}" cy="${fy}" r="22" class="misting-active-ring" fill="none" stroke="rgba(56,189,248,0.4)" stroke-width="1"/>` : ''}
+      </g>
     `;
   });
 
@@ -984,7 +993,7 @@ function renderRtlsMap(gridData) {
           <circle cx="0" cy="0" r="12" fill="rgba(56,189,248,0.35)" stroke="#38bdf8" stroke-width="2"/>
           <text x="0" y="4" font-size="11" text-anchor="middle">🚜</text>
           <rect x="-30" y="-23" width="60" height="12" rx="3" fill="rgba(15,23,42,0.85)" stroke="#38bdf8" stroke-width="0.5"/>
-          <text x="0" y="-14" fill="#38bdf8" font-size="7.5" font-weight="bold" text-anchor="middle">Juno (Yem)</text>
+          <text x="0" y="-14" fill="#38bdf8" font-size="7.5" font-weight="bold" text-anchor="middle">Juno (18cm)</text>
         </g>
       `;
     }
@@ -2951,4 +2960,401 @@ function filterGuideContent(query) {
   if (firstMatchId) {
     selectGuideTab(firstMatchId);
   }
+}
+
+
+// ============================================================================
+// FARM DEVICES FLEET & IOT HARDWARE ENGINE (FAZ 18)
+// Realistic Simulation of 12 Industrial & Biological PLF Devices
+// ============================================================================
+
+let currentDeviceCategory = "ALL";
+
+function openDevicesModal() {
+  const modal = document.getElementById("devicesModal");
+  if (modal) {
+    modal.classList.add("active");
+    renderDevicesModal();
+  }
+}
+
+function closeDevicesModal(event) {
+  if (event.target.id === "devicesModal") {
+    closeDevicesModalDirect();
+  }
+}
+
+function closeDevicesModalDirect() {
+  const modal = document.getElementById("devicesModal");
+  if (modal) {
+    modal.classList.remove("active");
+  }
+}
+
+function filterDeviceCategory(cat) {
+  currentDeviceCategory = cat;
+  document.querySelectorAll(".dev-filter-btn").forEach(btn => {
+    if (btn.getAttribute("onclick") && btn.getAttribute("onclick").includes(cat)) {
+      btn.classList.add("active");
+    } else {
+      btn.classList.remove("active");
+    }
+  });
+  renderDevicesModal();
+}
+
+function sendDeviceAction(deviceId, actionType) {
+  const state = currentFarmState || clientSimState;
+  if (!state) return;
+
+  if (actionType === "TEST_VALVE") {
+    alert("🥛 AMS Robot: Süt yönlendirme vanası test edildi. Pnömatik vana [MAIN_TANK ➔ SEPARATION_DRAIN] konumuna yönlendirildi.");
+  } else if (actionType === "EXTRA_PUSH") {
+    alert("🚜 Lely Juno X: Ekstra yem itme devriyesi tetiklendi. Helezon 85 RPM hızla orta yem yoluna hareket ediyor.");
+  } else if (actionType === "DUMP_MANURE") {
+    alert("🧹 Discovery Vac: Gübre tankı biyogaz transfer çukuruna manuel deşarj edildi. Tank seviyesi %0'a sıfırlandı.");
+    if (state.robotics && state.robotics.collector) {
+      state.robotics.collector.tank_fill_pct = 0.0;
+    }
+  } else if (actionType === "TOGGLE_GATE") {
+    alert("🚪 Akıllı Ayırma Kapısı: Pnömatik silindir manuel test edildi. Yönlendirme kanadı [REVİR BÖLMESİNE] açıldı.");
+  } else if (actionType === "BOOST_FANS") {
+    alert("🌀 HVLS Tavan Fanları: VFD frekans invertörü manuel olarak 350 RPM maksimum soğutma moduna yükseltildi.");
+  } else if (actionType === "PULSE_MIST") {
+    alert("💦 Evaporatif Sisleme: 70 Bar yüksek basınç pompası 30 saniyelik puf döngüsü başlattı.");
+  } else if (actionType === "AGITATE_DIGESTER") {
+    alert("⚙️ Biyogaz Reaktörü: 45 RPM mekanik paletli karıştırıcı motoru 15 dakikalık homojenizasyon döngüsü başlattı.");
+  } else if (actionType === "SYNC_CHP") {
+    alert("⚡ Kojenerasyon (CHP): Şebeke senkronizasyon invertörü 50.0 Hz frekans ve 35.2 kW üretim ile kilitlendi.");
+  } else if (actionType === "CALIBRATE_CAM") {
+    alert("📷 3D Derinlik Kamerası: RGB-D kızılötesi derinlik sensörü ve omurga referans çizgisi sıfırlandı.");
+  } else if (actionType === "PING_BOLUS") {
+    alert("📡 İntraruminal Bolus Ağı: 433.92 MHz ISM frekansında 6 aktif probdan anlık pH ve retikulum ısısı sorgulandı.");
+  } else if (actionType === "READ_BRIX") {
+    alert("🔬 Buzağı İstasyonu: Optik Brix refraktometresi okundu: %23.8 Brix (IgG > 50 g/L Altın Kalite).");
+  } else if (actionType === "FLUSH_BUFFER") {
+    alert("💾 Edge Gateway: Yerel 72 saatlik çevrimdışı telemetri tampon belleği buluta başarıyla senkronize edildi.");
+  }
+
+  advanceStep();
+  renderDevicesModal();
+}
+
+function renderDevicesModal() {
+  const container = document.getElementById("devicesGridContainer");
+  if (!container) return;
+
+  const state = currentFarmState || clientSimState;
+  if (!state) return;
+
+  // Generate fallback device objects if state.devices is not yet attached
+  let devices = {};
+  if (state.devices && state.devices.devices) {
+    devices = state.devices.devices;
+  } else {
+    // Generate realistic in-memory devices matching farm_devices_twin.py
+    const tick = state.simulation_tick || 1;
+    const isHeat = state.active_scenario === "heatwave";
+    const treatedCount = state.edge_gateway && state.edge_gateway.active_treatments ? state.edge_gateway.active_treatments.length : 0;
+    const critCows = state.animals ? state.animals.filter(a => a.dss && a.dss.overall_health_status === "CRITICAL").length : 0;
+    const junoX = state.robotics && state.robotics.pusher ? state.robotics.pusher.x_m : 18.5;
+    const discTank = state.robotics && state.robotics.collector ? state.robotics.collector.tank_fill_pct : 42.0;
+
+    devices = {
+      "DEV-AMS-01": {
+        device_id: "DEV-AMS-01",
+        name: "Robotik Sağım İstasyonu (AMS / VMS)",
+        category: "MILKING",
+        status: treatedCount > 0 ? "ALERT" : "RUNNING",
+        power_draw_kw: 2.45,
+        health_pct: 98.5,
+        key_metrics: {
+          "Lob Sayacı": "4 Bağımsız Kanal",
+          "Hat İçi Spektrometre": "Aktif (Somatik Hücre)",
+          "Süt Vanası": treatedCount > 0 ? "ATIK TANKINA KİLİTLİ" : "ANA SÜT TANKI (Açık)",
+          "Buhar Sterilizasyonu": "95°C (12 sn Perasetik)",
+          "Post-Dip Sprey": "İyotlu Polimer Bariyer"
+        },
+        operational_mode: treatedCount > 0 ? "🔒 İlaç Arınma Kilidi Aktif" : "Birinci Sınıf Ana Tank Kabulü",
+        last_action: treatedCount > 0 ? "Antibiyotikli inek sağıldı; süt tahliye hattına verildi." : "Spektroskopik 4 lob süt sayaçları nominal akışta.",
+        academic_key: "conductivity",
+        action_btn: "TEST_VALVE",
+        action_label: "🔄 Süt Vanasını Test Et"
+      },
+      "DEV-JUNO-01": {
+        device_id: "DEV-JUNO-01",
+        name: "Otonom Yem İtici Robot (Lely Juno X)",
+        category: "ROBOTICS",
+        status: "RUNNING",
+        power_draw_kw: 0.45,
+        health_pct: 96.0,
+        key_metrics: {
+          "Konum (X Koordinatı)": `${junoX.toFixed(1)} m (Yem Yolu)`,
+          "İlerleme Hızı": "0.25 m/s",
+          "Helezon Devri": "85 RPM",
+          "Yem Yüksekliği": "18.5 cm (Ultrasonik)",
+          "Batarya Seviyesi": "%88 (Li-ion)"
+        },
+        operational_mode: "Yem İtme Devriyesi (85 RPM Helezon)",
+        last_action: `Orta yem yolu taranıyor (x: ${junoX.toFixed(1)}m, DMI artışı +%3.2).`,
+        academic_key: "juno_robot",
+        action_btn: "EXTRA_PUSH",
+        action_label: "▶️ Ekstra Yem İtme Başlat"
+      },
+      "DEV-DISCOVERY-01": {
+        device_id: "DEV-DISCOVERY-01",
+        name: "Otonom Gübre Vakum Robotu (Discovery Vac)",
+        category: "ROBOTICS",
+        status: discTank >= 85 ? "DISCHARGING" : "RUNNING",
+        power_draw_kw: 0.65,
+        health_pct: 94.5,
+        key_metrics: {
+          "Tank Doluluk Oranı": `%${discTank.toFixed(0)} / 350 L`,
+          "Ön Su Püskürtme": "Aktif (3 Bar)",
+          "Günlük Toplanan Gübre": "1.250 kg",
+          "Topallık Azaltım": "%28 (Tırnak Koruma)",
+          "Batarya Seviyesi": "%74 (Li-ion)"
+        },
+        operational_mode: discTank >= 85 ? "Biyogaz Transfer Çukuruna Deşarj" : "Zemin Vakumlama & Ön Su Püskürtme",
+        last_action: "Izgara koridorda gübre vakumlanarak zemin kaymaz tutuluyor.",
+        academic_key: "discovery_robot",
+        action_btn: "DUMP_MANURE",
+        action_label: "🛢️ Biyogaza Deşarj Et"
+      },
+      "DEV-GATE-01": {
+        device_id: "DEV-GATE-01",
+        name: "Akıllı Otomatik Ayırma Kapısı (Smart Gate)",
+        category: "ROBOTICS",
+        status: critCows > 0 ? "ALERT" : "RUNNING",
+        power_draw_kw: 0.35,
+        health_pct: 99.2,
+        key_metrics: {
+          "Pnömatik Silindir": "6.2 Bar Basınç",
+          "Yönlendirme Kanadı": critCows > 0 ? "45° AÇIK (Revir Tüneli)" : "0° KAPALI (Ana Barınak)",
+          "RFID Okuma Gecikmesi": "18 ms",
+          "Fotosel Emniyet": "Sıkışma Önleyici Aktif"
+        },
+        operational_mode: critCows > 0 ? "🚨 Pnömatik Piston AÇIK (Revire Sevk)" : "Normal Akış: Ana Barınak Dönüşü",
+        last_action: critCows > 0 ? "Kritik vaka algılandı; kapı kanadı revire açıldı." : "Tüm inekler serbest padoka yönlendiriliyor.",
+        academic_key: "smart_gate",
+        action_btn: "TOGGLE_GATE",
+        action_label: "🚪 Kapı Yönünü Değiştir"
+      },
+      "DEV-HVLS-FANS": {
+        device_id: "DEV-HVLS-FANS",
+        name: "Değişken Hızlı HVLS Tavan Fanları (Zone A-D)",
+        category: "HVAC",
+        status: isHeat ? "RUNNING" : "RUNNING",
+        power_draw_kw: isHeat ? 6.4 : 1.8,
+        health_pct: 97.0,
+        key_metrics: {
+          "Aktif Fan Sayısı": "4 Tavan Ünitesi (7.3m)",
+          "VFD İnvertör Devri": isHeat ? "350 RPM (Maksimum)" : "140 RPM (Sirkülasyon)",
+          "Hava Akış Hızı": isHeat ? "2.6 m/s" : "1.2 m/s",
+          "THI Tetik Eşiği": "72.0 THI"
+        },
+        operational_mode: isHeat ? "Maksimum Soğutma (350 RPM VFD)" : "Standart Sirkülasyon (140 RPM)",
+        last_action: "Barınakta laminar hava akımı oluşturularak ısı stresi düşürülüyor.",
+        academic_key: "thi",
+        action_btn: "BOOST_FANS",
+        action_label: "🌀 Fan Hızını Manuel Artır"
+      },
+      "DEV-MISTING-SYS": {
+        device_id: "DEV-MISTING-SYS",
+        name: "Yüksek Basınçlı Evaporatif Sisleme Pompası",
+        category: "HVAC",
+        status: isHeat ? "RUNNING" : "IDLE",
+        power_draw_kw: isHeat ? 2.2 : 0.05,
+        health_pct: 98.0,
+        key_metrics: {
+          "Hat Basıncı": "70 Bar Paslanmaz",
+          "Damla Çapı": "15 Mikron (Kuru Sis)",
+          "Evaporatif Soğutma": isHeat ? "-3.8°C Delta T" : "0.0°C (Beklemede)",
+          "Çalışma Döngüsü": "30 sn Puf / 4.5 dk Bekleme"
+        },
+        operational_mode: isHeat ? "Periyodik Evaporatif Sisleme Aktif" : "Beklemede (Eşik Altı)",
+        last_action: "İnek yataklarını ıslatmadan ortam havasında evaporatif buharlaşma.",
+        academic_key: "thi",
+        action_btn: "PULSE_MIST",
+        action_label: "💦 30sn Sisleme Püskürt"
+      },
+      "DEV-DIGESTER-01": {
+        device_id: "DEV-DIGESTER-01",
+        name: "Biyogaz Anaerobik Çürütücü (CSTR Reaktör)",
+        category: "ENERGY",
+        status: "RUNNING",
+        power_draw_kw: 1.85,
+        health_pct: 98.2,
+        key_metrics: {
+          "Reaktör Sıcaklığı": "38.5°C Mezofilik",
+          "Mekanik Karıştırıcı": "45 RPM Paletli",
+          "Biyogaz Üretimi": "213.3 m³/gün",
+          "Metan Saflığı": "%62.5 CH4",
+          "Günlük Gübre Girişi": "3.600 kg taze atık"
+        },
+        operational_mode: "Sürekli Karışımlı Mezofilik Fermantasyon",
+        last_action: "Discovery'den gelen taze gübre fermente edilerek metan üretiliyor.",
+        academic_key: "biogas_chp",
+        action_btn: "AGITATE_DIGESTER",
+        action_label: "⚙️ Karıştırıcıyı Çalıştır"
+      },
+      "DEV-CHP-GEN": {
+        device_id: "DEV-CHP-GEN",
+        name: "Kojenerasyon (CHP) Gaz Motoru & İnvertör",
+        category: "ENERGY",
+        status: "RUNNING",
+        power_draw_kw: 0.0,
+        health_pct: 99.0,
+        key_metrics: {
+          "Motor Devri": "1500 RPM Senkron",
+          "Elektrik Üretimi": "35.2 kW (506 kWh/gün)",
+          "Termal Isı Geri Kazanımı": "48.5 kW (85°C Sıcak Su)",
+          "Şebekeye Net Satış": "+26.8 kW Temiz Güç",
+          "Enerji Öz Yeterlilik": "%506 (Net-Zero)"
+        },
+        operational_mode: "Şebeke Senkron Kojenerasyon Üretimi",
+        last_action: "Biyogaz yakılarak tüm ahır cihazlarının elektriği ve ısısı üretiliyor.",
+        academic_key: "biogas_chp",
+        action_btn: "SYNC_CHP",
+        action_label: "⚡ Şebeke Senkron Testi"
+      },
+      "DEV-BOLUS-NET": {
+        device_id: "DEV-BOLUS-NET",
+        name: "İntraruminal Kablosuz Bolus Sensör Ağı",
+        category: "SENSORS",
+        status: "RUNNING",
+        power_draw_kw: 0.08,
+        health_pct: 100.0,
+        key_metrics: {
+          "Aktif Bolus Sayısı": "6 Baş (Retikulum Probu)",
+          "RF Frekansı": "433.92 MHz ISM Bandı",
+          "Retikulum Sıcaklığı": "38.8°C",
+          "Rumen pH Örnekleme": "Her 10 dakikada 1 paket",
+          "İşkembe Motilitesi": "1.9 kasılma/dk"
+        },
+        operational_mode: "Kablosuz Biyo-Telemetri Yayını",
+        last_action: "6 ineğin intraruminal pH ve sıcaklık kinetiği canlı akıştadır.",
+        academic_key: "rumen_ph",
+        action_btn: "PING_BOLUS",
+        action_label: "📡 RF Telemetri Sorgula"
+      },
+      "DEV-CAM-3D": {
+        device_id: "DEV-CAM-3D",
+        name: "3D Bilgisayarlı Görü Derinlik Kamerası",
+        category: "SENSORS",
+        status: "RUNNING",
+        power_draw_kw: 0.25,
+        health_pct: 99.0,
+        key_metrics: {
+          "Kare Hızı (FPS)": "30 FPS Kızılötesi",
+          "Çözünürlük": "1280x720 RGB-D Nokta Bulutu",
+          "Sırt Kemerleşme Açısı": "%8.5 (Normal Yürüyüş)",
+          "Lens Kirlilik Sensörü": "%99.8 Temiz",
+          "Yapay Zeka Modeli": "YOLOv8-Pose + 3D Mesh"
+        },
+        operational_mode: "Çıkış Koridoru Sürekli Yürüyüş Taraması",
+        last_action: "Topallık ve BCS vücut kondisyon skoru 3D omurga profili çıkarıldı.",
+        academic_key: "lameness",
+        action_btn: "CALIBRATE_CAM",
+        action_label: "📷 Kamera Kalibrasyonu Yap"
+      },
+      "DEV-CALF-FEEDER": {
+        device_id: "DEV-CALF-FEEDER",
+        name: "Otomatik Buzağı Kolostrum İstasyonu & Brix",
+        category: "CALVING",
+        status: "RUNNING",
+        power_draw_kw: 0.45,
+        health_pct: 99.5,
+        key_metrics: {
+          "Optik Brix Refraktometresi": "%23.8 Brix (Altın Kalite)",
+          "Kolostrum IgG Yoğunluğu": "55.9 g/L (FPT Koruması)",
+          "Pastörizatör Kazanı": "60°C (60 dk Düşük Isı)",
+          "Porsiyonlama Pompası": "38.5°C Vücut Isısında Dağıtım",
+          "Hijyen Durumu": "Otomatik CIP Yıkama Tamam"
+        },
+        operational_mode: "Otomatik İmmünglobulin Kalite Kontrolü",
+        last_action: "Brix %23.8 kolostrum pastörize edildi; buzağıya hazırlandı.",
+        academic_key: "brix",
+        action_btn: "READ_BRIX",
+        action_label: "🔬 Refraktometreyi Oku"
+      },
+      "DEV-EDGE-GATEWAY": {
+        device_id: "DEV-EDGE-GATEWAY",
+        name: "Endüstriyel Uç Bilişim Ağ Geçidi (Edge IoT)",
+        category: "EDGE",
+        status: "RUNNING",
+        power_draw_kw: 0.15,
+        health_pct: 100.0,
+        key_metrics: {
+          "Mikro-Karar Döngüsü": "12 ms Gecikme",
+          "MQTT Telemetri Hızı": "48 paket/saniye",
+          "Çevrimdışı Bellek": "72 Saat Tampon Depolama",
+          "Bağlı PLC / Kontrolör": "11 Endüstriyel Cihaz",
+          "Protokol Desteği": "Modbus TCP, OPC UA, MQTT"
+        },
+        operational_mode: "Düşük Gecikmeli Yerel Karar Döngüsü (Edge)",
+        last_action: "Tüm ahır cihazları ve sensörler 12ms döngüyle senkronize ediliyor.",
+        academic_key: "edge_computing",
+        action_btn: "FLUSH_BUFFER",
+        action_label: "💾 Yerel Tamponu Eşitle"
+      }
+    };
+  }
+
+  // Filter by category
+  const filteredKeys = Object.keys(devices).filter(k => {
+    const d = devices[k];
+    if (currentDeviceCategory === "ALL") return true;
+    return d.category === currentDeviceCategory;
+  });
+
+  let cardsHtml = "";
+  filteredKeys.forEach(k => {
+    const d = devices[k];
+    const statusCls = (d.status || "RUNNING").toLowerCase();
+
+    let metricsHtml = "";
+    if (d.key_metrics) {
+      Object.keys(d.key_metrics).forEach(mKey => {
+        metricsHtml += `
+          <div class="dev-metric-item">
+            <span>${mKey}</span>
+            <strong>${d.key_metrics[mKey]}</strong>
+          </div>
+        `;
+      });
+    }
+
+    cardsHtml += `
+      <div class="device-card" data-academic-key="${d.academic_key || 'edge_computing'}">
+        <div class="device-card-header">
+          <div class="device-card-title">
+            <strong>${d.name}</strong>
+            <span>${d.device_id}</span>
+          </div>
+          <span class="device-status-badge ${statusCls}">
+            <span class="edge-dot online" style="width:6px; height:6px;"></span> ${d.status}
+          </span>
+        </div>
+
+        <div class="device-mode-box">
+          <strong>Mod:</strong> ${d.operational_mode}<br>
+          <small style="color:var(--text-muted);">${d.last_action}</small>
+        </div>
+
+        <div class="device-metrics-grid">
+          ${metricsHtml}
+        </div>
+
+        <div class="device-action-footer">
+          <span class="device-power-tag">⚡ ${d.power_draw_kw.toFixed(2)} kW</span>
+          <button class="device-btn-action" onclick="sendDeviceAction('${d.device_id}', '${d.action_btn || 'TEST_VALVE'}')">
+            ${d.action_label || 'Aktüatör Testi'}
+          </button>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = cardsHtml;
 }

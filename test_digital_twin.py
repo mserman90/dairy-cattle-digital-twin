@@ -418,6 +418,42 @@ def test_demo_personas_and_modes():
     assert switch_res.status_code == 200
     assert switch_res.json()["active_persona"] == "manager"
 
+def test_farm_devices_fleet_simulation():
+    """Tüm 12 donanım/cihazın fiziksel simülasyonu ve telemetrisi doğrulanır"""
+    from farm_devices_twin import farm_devices_engine
+    state = simulator_engine.get_full_state()
+    assert state.devices is not None
+    assert len(state.devices.devices) == 12
+    assert state.devices.total_active_devices >= 10
+    assert state.devices.total_fleet_power_kw > 0.0
+
+    # Check key devices exist in dictionary
+    devices_dict = state.devices.devices
+    assert "DEV-AMS-01" in devices_dict
+    assert "DEV-JUNO-01" in devices_dict
+    assert "DEV-DISCOVERY-01" in devices_dict
+    assert "DEV-GATE-01" in devices_dict
+    assert "DEV-HVLS-FANS" in devices_dict
+    assert "DEV-MISTING-SYS" in devices_dict
+    assert "DEV-DIGESTER-01" in devices_dict
+    assert "DEV-CHP-GEN" in devices_dict
+    assert "DEV-CAM-3D" in devices_dict
+    assert "DEV-BOLUS-NET" in devices_dict
+    assert "DEV-CALF-FEEDER" in devices_dict
+    assert "DEV-EDGE-GATEWAY" in devices_dict
+
+    # Verify device specific metrics
+    ams = devices_dict["DEV-AMS-01"]
+    assert ams.status in ["RUNNING", "IDLE", "CLEANING"]
+    assert "Lazer Pozisyonlama" in ams.key_metrics or "Memelik Lazer Pozisyonu" in ams.key_metrics or len(ams.key_metrics) > 0
+
+    # Test tick updates power and metrics
+    fleet = farm_devices_engine.tick_all_devices(ambient_temp_c=28.0, thi_index=79.0, heatwave_active=True)
+    assert fleet.total_fleet_power_kw > 0
+    assert fleet.devices["DEV-HVLS-FANS"].status == "RUNNING"
+    assert "350 RPM" in fleet.devices["DEV-HVLS-FANS"].key_metrics.get("Fan Devri (VFD)", "") or "350 RPM" in fleet.devices["DEV-HVLS-FANS"].operational_mode
+
+
 
 
 

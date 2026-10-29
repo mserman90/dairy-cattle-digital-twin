@@ -4336,3 +4336,299 @@ table {
     padding: 1rem;
   }
 }
+
+
+
+/* ==========================================================================
+   FARM DEVICES FLEET & IOT HARDWARE HUB (FAZ 18)
+   ========================================================================== */
+
+.devices-modal-backdrop {
+  z-index: 100015;
+}
+
+.devices-modal-dialog {
+  width: 95% !important;
+  max-width: 1300px !important;
+  max-height: 94vh !important;
+  max-height: 94dvh !important;
+  display: flex;
+  flex-direction: column;
+  background: rgba(13, 20, 36, 0.98) !important;
+  border: 1px solid rgba(56, 189, 248, 0.45) !important;
+  box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.9), 0 0 35px rgba(56, 189, 248, 0.22) !important;
+}
+
+.devices-modal-header {
+  padding: 1.1rem 1.6rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.devices-hero-banner {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.9));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1rem 1.6rem;
+  flex-shrink: 0;
+}
+
+.dev-hero-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.dev-hero-metric span {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.dev-hero-metric strong {
+  font-size: 1.25rem;
+  color: #ffffff;
+  font-family: var(--font-mono);
+}
+.dev-hero-metric small {
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+.devices-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.6rem;
+  background: rgba(10, 15, 29, 0.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+
+.dev-filter-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s ease;
+}
+
+.dev-filter-btn:hover {
+  background: rgba(56, 189, 248, 0.15);
+  color: #f1f5f9;
+}
+
+.dev-filter-btn.active {
+  background: rgba(56, 189, 248, 0.22);
+  border-color: #38bdf8;
+  color: #38bdf8;
+  font-weight: 700;
+}
+
+.devices-modal-body {
+  padding: 1.25rem 1.6rem !important;
+  overflow-y: auto !important;
+  flex: 1 1 auto;
+}
+
+.devices-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.1rem;
+}
+
+@media (max-width: 1100px) {
+  .devices-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .devices-grid {
+    grid-template-columns: 1fr;
+  }
+  .devices-hero-banner {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.device-card {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.device-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(56, 189, 248, 0.1);
+}
+
+.device-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.device-card-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.device-card-title strong {
+  font-size: 0.92rem;
+  color: #ffffff;
+}
+
+.device-card-title span {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.device-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 9999px;
+  text-transform: uppercase;
+}
+
+.device-status-badge.running {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.device-status-badge.charging {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+}
+
+.device-status-badge.alert {
+  background: rgba(244, 63, 94, 0.15);
+  color: #fda4af;
+  border: 1px solid rgba(244, 63, 94, 0.4);
+}
+
+.device-status-badge.idle {
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.device-mode-box {
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.76rem;
+  color: #cbd5e1;
+  line-height: 1.4;
+  border-left: 3px solid #38bdf8;
+}
+
+.device-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.45rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 0.6rem;
+  border-radius: 6px;
+}
+
+.dev-metric-item {
+  display: flex;
+  flex-direction: column;
+}
+.dev-metric-item span {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+.dev-metric-item strong {
+  font-size: 0.82rem;
+  color: #f1f5f9;
+  font-family: var(--font-mono);
+}
+
+.device-action-footer {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.device-power-tag {
+  font-size: 0.72rem;
+  color: #38bdf8;
+  font-family: var(--font-mono);
+}
+
+.device-btn-action {
+  font-size: 0.72rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 6px;
+  cursor: pointer;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+  font-weight: 600;
+  transition: all 0.18s ease;
+}
+
+.device-btn-action:hover {
+  background: rgba(56, 189, 248, 0.3);
+  color: #ffffff;
+}
+
+/* Rotating Fans Animation on RTLS Barn Map */
+@keyframes spinFanSlow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+@keyframes spinFanFast {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.spinning-fan-medium {
+  animation: spinFanSlow 1.4s linear infinite;
+  transform-origin: center;
+}
+.spinning-fan-fast {
+  animation: spinFanFast 0.6s linear infinite;
+  transform-origin: center;
+}
+
+/* Evaporative Misting Droplets Animation */
+@keyframes mistPulse {
+  0%, 100% { opacity: 0.2; r: 12px; }
+  50% { opacity: 0.8; r: 24px; }
+}
+.misting-active-ring {
+  animation: mistPulse 2s ease-in-out infinite;
+}

@@ -11,6 +11,7 @@ from biogas_energy_twin import FarmEnergyTwinProfile
 from barn_robotics_twin import BarnRoboticsFleetProfile
 from calving_twin import CowCalvingTwin, FarmMaternitySummary
 from genomic_breeding_twin import CowPedigreeProfile, HerdGenomicSummary
+from farm_devices_twin import FarmDevicesFleetProfile
 
 class AnimalTelemetry(BaseModel):
     activity_index: int = Field(..., description="Adım / aktivite indeksi (adım/saat)")
@@ -111,3 +112,4 @@ class FarmTwinState(BaseModel):
     maternity: Optional[FarmMaternitySummary] = None
     # Faz 13 Genomik Seleksiyon & Çiftleştirme İkizi:
     genomics: Optional[HerdGenomicSummary] = None
+    devices: Optional[FarmDevicesFleetProfile] = None
