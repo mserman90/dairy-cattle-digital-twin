@@ -2765,6 +2765,75 @@ body {
   line-height: 1.35;
 }
 
+/* Daily Audit Report Modal Styling */
+.report-content-box {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  padding: 1.25rem 1.5rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #e2e8f0;
+  line-height: 1.6;
+  font-size: 0.88rem;
+}
+
+.report-content-box h1 {
+  font-size: 1.25rem;
+  color: #38bdf8;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 0.4rem;
+}
+
+.report-content-box h2 {
+  font-size: 1.05rem;
+  color: #f1f5f9;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.report-content-box table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+  font-size: 0.8rem;
+}
+
+.report-content-box th, .report-content-box td {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+}
+
+.report-content-box th {
+  background: rgba(30, 41, 59, 0.8);
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.report-content-box tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.report-content-box hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 1rem 0;
+}
+
+.report-content-box ul {
+  padding-left: 1.25rem;
+  margin: 0.4rem 0;
+}
+
+.report-content-box code {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.15rem 0.35rem;
+  border-radius: 4px;
+  font-size: 0.85em;
+  color: #38bdf8;
+}
+
 
 
 

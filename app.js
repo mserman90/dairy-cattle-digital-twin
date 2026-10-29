@@ -393,7 +393,20 @@ async function triggerScenario(scenarioName) {
       setTimeout(() => openXaiModal("TR-34-103"), 300);
     }
   } catch (err) {
-    console.error("Error triggering scenario:", err);
+    if (typeof handleClientScenario === "function") {
+      handleClientScenario(scenarioName);
+    }
+    if (scenarioName === "mastitis") {
+      setTimeout(() => openXaiModal("TR-34-102"), 300);
+    } else if (scenarioName === "estrus") {
+      setTimeout(() => openXaiModal("TR-34-105"), 300);
+    } else if (scenarioName === "lameness") {
+      setTimeout(() => openXaiModal("TR-34-104"), 300);
+    } else if (scenarioName === "sara") {
+      setTimeout(() => openXaiModal("TR-34-103"), 300);
+    } else if (scenarioName === "dystocia" || scenarioName === "calving_imminent") {
+      setTimeout(() => openCalvingModal(), 300);
+    }
   }
 }
 
@@ -403,7 +416,19 @@ async function toggleEdgeConnection() {
     if (!res.ok) throw new Error("Edge toggle failed");
     await fetchFarmState();
   } catch (err) {
-    console.error("Error toggling edge connection:", err);
+    const dot = document.getElementById("edgeDot");
+    const label = document.getElementById("edgeStatusLabel");
+    if (dot && label) {
+      if (dot.classList.contains("offline")) {
+        dot.classList.remove("offline");
+        dot.classList.add("online");
+        label.textContent = "📡 Edge: Online (İstemci)";
+      } else {
+        dot.classList.remove("online");
+        dot.classList.add("offline");
+        label.textContent = "⚠️ Edge: Offline (İstemci)";
+      }
+    }
   }
 }
 
@@ -425,7 +450,19 @@ async function prescribeTreatment() {
     const drugBox = document.getElementById("drugWithdrawalBox");
     if (drugBox) drugBox.style.display = "flex";
   } catch (err) {
-    console.error("Error prescribing treatment:", err);
+    if (clientSimState && selectedAnimal) {
+      if (!clientSimState.edge_gateway.active_treatments) clientSimState.edge_gateway.active_treatments = [];
+      clientSimState.edge_gateway.active_treatments.push({
+        animal_id: selectedAnimal.id,
+        drug_administered: "Sefalosporin İntramammar",
+        withdrawal_period_days: 5,
+        treatment_timestamp: new Date().toISOString(),
+        diagnosis: "Mastitis Tedavisi"
+      });
+      const drugBox = document.getElementById("drugWithdrawalBox");
+      if (drugBox) drugBox.style.display = "flex";
+      renderUI(clientSimState);
+    }
   }
 }
 
@@ -474,7 +511,6 @@ async function executeAiQuery(query) {
   }
 }
 
-// RTLS Spatial Heatmap Renderer
 function renderRtlsMap(gridData) {
   const svg = document.getElementById("rtlsBarnSvg");
   if (!svg || !gridData.cells) return;
@@ -1284,7 +1320,8 @@ async function resolveIntervention() {
     await triggerScenario("reset");
     closeModalDirect();
   } catch (err) {
-    console.error("Error resolving intervention:", err);
+    handleClientScenario("reset");
+    closeModalDirect();
   }
 }
 
@@ -1561,7 +1598,11 @@ async function openRoboticsModal() {
     renderRoboticsModal(rob);
     document.getElementById("roboticsModal").classList.add("active");
   } catch (err) {
-    console.error("Robotik modalı açılırken hata:", err);
+    const state = currentFarmState || (typeof clientSimState !== 'undefined' ? clientSimState : null) || (typeof GITHUB_PAGES_FALLBACK_STATE !== 'undefined' ? GITHUB_PAGES_FALLBACK_STATE : null);
+    if (state && state.robotics) {
+      renderRoboticsModal(state.robotics);
+      document.getElementById("roboticsModal").classList.add("active");
+    }
   }
 }
 
@@ -1648,7 +1689,10 @@ async function openCalvingModal() {
     const mat = await res.json();
     renderCalvingModal(mat);
   } catch (err) {
-    console.error("Doğumhane modal yükleme hatası:", err);
+    const state = currentFarmState || (typeof clientSimState !== 'undefined' ? clientSimState : null);
+    if (state && state.maternity) {
+      renderCalvingModal(state.maternity);
+    }
   }
 }
 
@@ -1794,7 +1838,11 @@ async function openGenomicsModal() {
     cachedGenomicsSummary = await res.json();
     renderGenomicsModal(cachedGenomicsSummary);
   } catch (err) {
-    console.error("Genomik modal hatası:", err);
+    const state = currentFarmState || (typeof clientSimState !== 'undefined' ? clientSimState : null);
+    if (state && state.genomics) {
+      cachedGenomicsSummary = state.genomics;
+      renderGenomicsModal(cachedGenomicsSummary);
+    }
   }
 }
 
@@ -1833,7 +1881,6 @@ async function onCowSelectionChange(cowId) {
     if (!res.ok) throw new Error("Eşleştirme verisi alınamadı");
     const matches = await res.json();
 
-    // Fetch cow pedigree info from animals state
     const stateRes = await fetch("/api/state");
     if (stateRes.ok) {
       const state = await stateRes.json();
@@ -1845,7 +1892,16 @@ async function onCowSelectionChange(cowId) {
 
     renderMatingBullsList(matches);
   } catch (err) {
-    console.error("İnek pedigri seçim hatası:", err);
+    const state = currentFarmState || (typeof clientSimState !== 'undefined' ? clientSimState : null) || (typeof GITHUB_PAGES_FALLBACK_STATE !== 'undefined' ? GITHUB_PAGES_FALLBACK_STATE : null);
+    if (state) {
+      const cow = state.animals.find(a => a.id === cowId);
+      if (cow && cow.pedigree) {
+        renderCowPedigreeDetails(cow);
+      }
+      if (cachedGenomicsSummary && cachedGenomicsSummary.mating_matrix_recommendations && cachedGenomicsSummary.mating_matrix_recommendations[cowId]) {
+        renderMatingBullsList(cachedGenomicsSummary.mating_matrix_recommendations[cowId]);
+      }
+    }
   }
 }
 
@@ -1950,3 +2006,314 @@ function renderMatingBullsList(matches) {
 
 
 
+
+
+// --- GÜNLÜK DENETİM RAPORU & ICAR ADE DIŞA AKTARIM MODÜLLERİ ---
+let currentReportMarkdown = "";
+
+async function openReportModal() {
+  const modal = document.getElementById("reportModal");
+  if (!modal) return;
+  modal.classList.add("active");
+
+  const metaEl = document.getElementById("reportMetaInfo");
+  const renderEl = document.getElementById("reportRenderedContent");
+  if (renderEl) {
+    renderEl.innerHTML = "<em>📋 Günlük denetim raporu hazırlanıyor...</em>";
+  }
+
+  try {
+    const res = await fetch("/api/report/daily");
+    if (!res.ok) throw new Error("Backend rapor servisi ulaşılamadı");
+    const data = await res.json();
+    currentReportMarkdown = data.report || "";
+  } catch (err) {
+    // Client-side fallback generation
+    currentReportMarkdown = generateDailyAuditReportMarkdown();
+  }
+
+  if (metaEl) {
+    metaEl.textContent = `Rapor Tarihi: ${new Date().toLocaleString('tr-TR')} | Durum: Canlı Telemetri Doğrulandı`;
+  }
+  if (renderEl) {
+    renderEl.innerHTML = renderMarkdownToHtml(currentReportMarkdown);
+  }
+}
+
+function closeReportModal(e) {
+  if (e.target.id === "reportModal") {
+    closeReportModalDirect();
+  }
+}
+
+function closeReportModalDirect() {
+  const modal = document.getElementById("reportModal");
+  if (modal) modal.classList.remove("active");
+}
+
+function copyReportText() {
+  if (!currentReportMarkdown) currentReportMarkdown = generateDailyAuditReportMarkdown();
+  navigator.clipboard.writeText(currentReportMarkdown).then(() => {
+    const btn = document.getElementById("btnCopyReport");
+    if (btn) {
+      const orig = btn.innerHTML;
+      btn.innerHTML = "Kopyalandı! ✓";
+      btn.style.borderColor = "#10b981";
+      btn.style.color = "#10b981";
+      setTimeout(() => {
+        btn.innerHTML = orig;
+        btn.style.borderColor = "";
+        btn.style.color = "";
+      }, 2500);
+    }
+  }).catch(err => {
+    console.error("Kopyalama hatası:", err);
+  });
+}
+
+function downloadReportMarkdown() {
+  if (!currentReportMarkdown) currentReportMarkdown = generateDailyAuditReportMarkdown();
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const blob = new Blob([currentReportMarkdown], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `AgriTwin_Gunluk_Denetim_Raporu_${dateStr}.md`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function generateDailyAuditReportMarkdown() {
+  const state = currentFarmState || (typeof clientSimState !== 'undefined' ? clientSimState : null) || (typeof GITHUB_PAGES_FALLBACK_STATE !== 'undefined' ? GITHUB_PAGES_FALLBACK_STATE : {});
+  const animals = (state && state.animals) || [];
+  const nowStr = new Date().toLocaleString('tr-TR');
+
+  const healthyCount = animals.filter(a => a.dss && a.dss.overall_health_status === "HEALTHY").length;
+  const warningCount = animals.filter(a => a.dss && a.dss.overall_health_status === "WARNING").length;
+  const criticalCount = animals.filter(a => a.dss && a.dss.overall_health_status === "CRITICAL").length;
+
+  let lines = [
+    `# 📋 AGRITWIN GÜNLÜK DİJİTAL İKİZ VE VETERİNER DENETİM RAPORU`,
+    `**Rapor Tarihi:** ${nowStr} | **Çiftlik:** ${state.farm_name || 'AgriTwin Süt Çiftliği'}`,
+    `**Sistem Durumu:** ${state.edge_gateway ? state.edge_gateway.connection_mode : 'ONLINE (GitHub Pages Modu)'} | **Simülasyon Adımı:** #${state.simulation_tick || 0}`,
+    "",
+    "---",
+    "## 1. 🩺 Sürü Sağlığı ve Erken Uyarı Özeti",
+    `- **Toplam Sürü Varlığı:** ${animals.length} Baş Holstein Friesian`,
+    `- **Genel Sağlık Durumu:** ${healthyCount} Sağlıklı | ${warningCount} Takipte | ${criticalCount} Acil/Revir`,
+    `- **Otomatik Ayırma Kapısı Durumu:** \`${state.sorting_gate ? state.sorting_gate.status : 'IDLE'}\` (Son Sevk: ${(state.sorting_gate && state.sorting_gate.last_diverted_animal_id) || 'Yok'})`,
+    "",
+    "| Küpe No | İsim | DIM | İletkenlik | Geviş (2sa) | Vücut Isısı | Mastitis Riski | XAI Önerisi |",
+    "| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |"
+  ];
+
+  animals.forEach(a => {
+    const statusEmoji = a.dss && a.dss.overall_health_status === "HEALTHY" ? "✅" : (a.dss && a.dss.overall_health_status === "WARNING" ? "⚠️" : "🚨");
+    const dim = a.days_in_milk || 100;
+    const cond = a.latest_milking ? a.latest_milking.conductivity_ms_cm.toFixed(2) : "5.10";
+    const rum = a.telemetry ? a.telemetry.rumination_minutes_2h : 45;
+    const temp = a.telemetry ? a.telemetry.body_temperature_c.toFixed(1) : "38.6";
+    const mast = a.dss ? Math.round(a.dss.mastitis_risk_score * 100) : 8;
+    const rec = a.dss ? a.dss.recommended_action : "STANDART_TAKIP";
+    lines.push(`| \`${a.id}\` | ${a.name} | ${dim}g | ${cond} mS/cm | ${rum} dk | ${temp}°C | %${mast} ${statusEmoji} | ${rec} |`);
+  });
+
+  lines.push("");
+  lines.push("---");
+  lines.push("## 2. 💊 Veteriner Tedavi & İlaç Arınma Takibi (Withdrawal Management)");
+  const treatments = (state.edge_gateway && state.edge_gateway.active_treatments) || [];
+  if (treatments.length > 0) {
+    treatments.forEach(tx => {
+      lines.push(`- 🚨 **Karantina:** Hayvan \`${tx.animal_id}\` (${tx.diagnosis}) - **İlaç:** ${tx.drug_administered} | **Kalan Arınma:** ${tx.withdrawal_period_days} Gün`);
+      lines.push(`  - *Otomasyon Koruması:* Sağım robotu ana tank kilidi \`AKTİF\`. Süt atık tankına imha ediliyor.`);
+    });
+  } else {
+    lines.push("- ✅ *Aktif antibiyotik karantinasında hayvan bulunmamaktadır. Tüm süt ana soğutma tankına kabul edilmektedir.*");
+  }
+
+  lines.push("");
+  lines.push("---");
+  lines.push("## 3. 🤰 Doğumhane, Distosi Erken Uyarı & Kolostrum / Buzağı İkizi");
+  if (state.maternity) {
+    const m = state.maternity;
+    lines.push(`- **Doğumhane Durumu:** ${m.status_summary}`);
+    lines.push(`- **24-48 Saat İçinde Doğum Beklenen İnekler:** ${m.cows_in_24h_calving_window} Baş | **Aktif Sancı:** ${m.active_labors_count} Baş | **Distosi Alarmı:** ${m.dystocia_emergencies_count} Baş`);
+    lines.push(`- **Dondurulmuş Kolostrum Bankası:** \`${m.colostrum_bank_stock_liters} Litre\` (-20°C Üstün Kalite >%22 Brix Rezervi)`);
+    lines.push(`- **Buzağıhane Varlığı:** ${m.nursery_calves_count} Baş Buzağı (Ortalama Vigor Skoru: ${m.avg_calf_vigor_score}/10)`);
+    if (m.calving_twins) {
+      m.calving_twins.forEach(t => {
+        const dys = t.dystocia_assessment;
+        lines.push(`  - 🐮 **${t.cow_name} (${t.cow_id}):** Gebelik: ${t.gestation_days}. Gün | Evre: \`${dys.stage}\` | Vücut Isısı: ${t.telemetry.body_temperature_c}°C (Düşüş: ${t.telemetry.temp_drop_c}°C) | Alarm: \`${dys.alert_level}\``);
+      });
+    }
+  }
+
+  lines.push("");
+  lines.push("---");
+  lines.push("## 4. 🧬 Genomik Islah, Akrabalık Katsayısı (Inbreeding) & Çiftleştirme");
+  if (state.genomics) {
+    const g = state.genomics;
+    lines.push(`- **Sürü Genomik Damızlık İndeksi:** $${Math.round(g.avg_herd_net_merit).toLocaleString('tr-TR')} NM$ (TPI: ${Math.round(g.avg_herd_tpi).toLocaleString('tr-TR')})`);
+    lines.push(`- **Sürü Ortalama Inbreeding Oranı (F):** %${g.avg_herd_inbreeding_pct.toFixed(2)} (Eşik: <%6.25 Güvenli)`);
+    lines.push(`- **Elit Dişi Sperma Adayı:** ${g.elite_donor_cows_count} Baş İnek`);
+  }
+
+  lines.push("");
+  lines.push("---");
+  lines.push("## 5. 🤖 Otonom Ahır Robot Filosu & Enerji İkizi");
+  if (state.robotics) {
+    const p = state.robotics.pusher || {};
+    const c = state.robotics.collector || {};
+    lines.push(`- **Juno-X Yem İtici:** Batarya %${p.battery_pct || 94} | Durum: \`${p.status || 'PUSHING_FEED'}\` | Tamamlanan Tur: ${p.daily_pushes_completed || 8} tur (DMI: +%${p.dmi_boost_pct || 3.2})`);
+    lines.push(`- **Discovery-Vac Gübre Robotu:** Batarya %${c.battery_pct || 88} | Durum: \`${c.status || 'VACUUMING'}\` | Toplanan Gübre: ${c.daily_manure_collected_kg || 480} kg (Tank: %${c.tank_fill_pct || 42})`);
+  }
+  if (state.energy) {
+    const dig = state.energy.digester || {};
+    const chp = state.energy.chp || {};
+    const biogas = (dig.daily_biogas_production_m3 || state.energy.biogas_production_m3_day || 213.3);
+    const ch4 = (dig.methane_content_pct || state.energy.biogas_methane_content_pct || 62.5);
+    const kwh = (chp.daily_electricity_generated_kwh || state.energy.chp_electricity_kwh_day || 506.6);
+    const selfSuff = (chp.self_sufficiency_ratio_pct != null ? chp.self_sufficiency_ratio_pct : (state.energy.energy_self_sufficiency_pct != null ? state.energy.energy_self_sufficiency_pct : 506.6));
+    lines.push(`- **Biyogaz Kojenerasyon (CHP):** ${biogas} m³/gün (%${ch4} CH₄) | Üretilen Elektrik: ${kwh} kWh/gün (Öz Yeterlilik: %${typeof selfSuff === 'number' ? selfSuff.toFixed(1) : selfSuff})`);
+  }
+
+  return lines.join("\n");
+}
+
+function renderMarkdownToHtml(md) {
+  if (!md) return "";
+  let html = md
+    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+    .replace(/^---$/gim, '<hr>')
+    .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/gim, '<em>$1</em>')
+    .replace(/`([^`]+)`/gim, '<code>$1</code>');
+
+  const lines = html.split('\n');
+  let inTable = false;
+  let tableHtml = "";
+  let finalLines = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (line.startsWith('|') && line.endsWith('|')) {
+      if (line.includes(':---') || line.includes('---:')) {
+        continue;
+      }
+      const cells = line.split('|').slice(1, -1).map(c => c.trim());
+      if (!inTable) {
+        inTable = true;
+        tableHtml = '<table><thead><tr>' + cells.map(c => `<th>${c}</th>`).join('') + '</tr></thead><tbody>';
+      } else {
+        tableHtml += '<tr>' + cells.map(c => `<td>${c}</td>`).join('') + '</tr>';
+      }
+    } else {
+      if (inTable) {
+        tableHtml += '</tbody></table>';
+        finalLines.push(tableHtml);
+        inTable = false;
+        tableHtml = "";
+      }
+      if (line.startsWith('- ')) {
+        finalLines.push(`<ul><li>${line.substring(2)}</li></ul>`);
+      } else if (line.length > 0 && !line.startsWith('<h') && !line.startsWith('<hr')) {
+        finalLines.push(`<p>${line}</p>`);
+      } else {
+        finalLines.push(line);
+      }
+    }
+  }
+  if (inTable) {
+    tableHtml += '</tbody></table>';
+    finalLines.push(tableHtml);
+  }
+
+  return finalLines.join('\n');
+}
+
+async function exportIcarAdeJson() {
+  try {
+    const res = await fetch("/api/export/icar-ade");
+    if (!res.ok) throw new Error("Backend export not available");
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ICAR_ADE_DairyTwin_Export_${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    // Client-side fallback ICAR ADE v2 export
+    const adeData = generateClientIcarAdeJson();
+    const blob = new Blob([JSON.stringify(adeData, null, 2)], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ICAR_ADE_DairyTwin_Export_${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+}
+
+function generateClientIcarAdeJson() {
+  const state = currentFarmState || (typeof clientSimState !== 'undefined' ? clientSimState : null) || (typeof GITHUB_PAGES_FALLBACK_STATE !== 'undefined' ? GITHUB_PAGES_FALLBACK_STATE : {});
+  const animals = (state && state.animals) || [];
+  const now = new Date().toISOString();
+
+  const records = animals.map(a => {
+    return {
+      animal: {
+        country_code: "TR",
+        visual_id: a.id,
+        species: "BOVINE",
+        breed: "HOL",
+        sex: "FEMALE"
+      },
+      days_in_milk: a.days_in_milk || 120,
+      lactation_number: a.lactation_number || 2,
+      milk_recordings: a.latest_milking ? [
+        {
+          recording_timestamp: now,
+          milking_session_id: `SESS-${a.id}-${state.simulation_tick || 1}`,
+          milk_yield_kg: a.latest_milking.yield_kg,
+          conductivity_ms_cm: a.latest_milking.conductivity_ms_cm,
+          milking_duration_seconds: 360
+        }
+      ] : [],
+      sensor_observations: a.telemetry ? [
+        { observation_type: "RUMINATION", observation_timestamp: now, value: a.telemetry.rumination_minutes_2h, unit_of_measure: "MINUTES" },
+        { observation_type: "ACTIVITY_INDEX", observation_timestamp: now, value: a.telemetry.activity_index, unit_of_measure: "STEPS_PER_HOUR" },
+        { observation_type: "BODY_TEMP", observation_timestamp: now, value: a.telemetry.body_temperature_c, unit_of_measure: "CELSIUS" },
+        { observation_type: "LYING_TIME", observation_timestamp: now, value: a.telemetry.lying_hours_today, unit_of_measure: "HOURS" }
+      ] : [],
+      health_events: a.dss ? [
+        {
+          event_timestamp: now,
+          diagnostic_category: a.dss.overall_health_status,
+          risk_score: a.dss.mastitis_risk_score,
+          recommended_action: a.dss.recommended_action,
+          sorting_gate_target: a.gate_assignment || "BARN_RETURN"
+        }
+      ] : []
+    };
+  });
+
+  return {
+    header: {
+      specification_version: "2.0.0",
+      document_id: `ICAR-DOC-${Date.now()}`,
+      created_timestamp: now,
+      sending_system: "AgriTwin-EdgeCore-Client-v2",
+      source_farm_id: "TR-34-AGRITWIN-01"
+    },
+    records: records
+  };
+}

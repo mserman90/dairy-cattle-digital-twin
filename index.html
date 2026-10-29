@@ -58,12 +58,12 @@
         <button class="btn btn-secondary" onclick="openRationModal()" title="Çok Amaçlı TMR Rasyon & Karbon-Verim Optimizasyon İkizi">
           🌾 Rasyon &amp; Karbon İkizi
         </button>
-        <a href="/api/report/daily" target="_blank" class="btn btn-secondary" title="Günlük Veteriner & Çiftlik Denetim Raporu">
+        <button class="btn btn-secondary" onclick="openReportModal()" title="Günlük Veteriner & Çiftlik Denetim Raporu">
           📋 Denetim Raporu
-        </a>
-        <a href="/api/export/icar-ade" target="_blank" class="btn btn-secondary" title="ICAR ADE standardında JSON veri aktarımı">
+        </button>
+        <button class="btn btn-secondary" onclick="exportIcarAdeJson()" title="ICAR ADE standardında JSON veri aktarımı">
           📥 ICAR ADE JSON
-        </a>
+        </button>
         <button id="btnPlayPause" class="btn btn-primary" onclick="togglePlayPause()">
           <span id="playIcon">⏸️</span> <span id="playText">Durdur</span>
         </button>
@@ -1156,6 +1156,34 @@
 
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeGenomicsModalDirect()">Kapat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Daily Audit Report Modal -->
+  <div id="reportModal" class="modal-backdrop" onclick="closeReportModal(event)">
+    <div class="modal-dialog modal-lg" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h2>📋 Günlük Dijital İkiz ve Veteriner Denetim Raporu</h2>
+          <span class="badge" style="background:rgba(56,189,248,0.15); color:#38bdf8; border:1px solid #38bdf8;">Markdown / ICAR Uyumlu</span>
+        </div>
+        <button class="close-btn" onclick="closeReportModalDirect()">&times;</button>
+      </div>
+      <div class="modal-body" style="max-height:72vh; overflow-y:auto;">
+        <div class="report-actions-bar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; padding:0.6rem 1rem; background:rgba(255,255,255,0.03); border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+          <span style="font-size:0.85rem; color:var(--text-muted);" id="reportMetaInfo">Rapor hazırlandı.</span>
+          <div style="display:flex; gap:0.5rem;">
+            <button class="btn btn-secondary" onclick="copyReportText()" id="btnCopyReport">📋 Metni Kopyala</button>
+            <button class="btn btn-primary" onclick="downloadReportMarkdown()">📥 Markdown İndir (.md)</button>
+          </div>
+        </div>
+        <div id="reportRenderedContent" class="report-content-box">
+          <!-- Rendered HTML -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeReportModalDirect()">Kapat</button>
       </div>
     </div>
   </div>
