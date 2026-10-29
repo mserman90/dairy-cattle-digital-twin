@@ -10,18 +10,41 @@
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
+  <!-- Top Demo Mode Notification Banner -->
+  <div class="demo-banner" id="demoBanner">
+    <div class="demo-banner-content">
+      <span class="badge" style="background:#10b981; color:#0f172a; font-weight:700;">✨ CANLI DEMO MODU</span>
+      <span><strong>AgriTwin Çiftlik İkizi:</strong> 6 Baş Telemetrili Holstein, 2 Otonom Robot &amp; Biyogaz Kojenerasyon aktif simülasyon akışındadır.</span>
+    </div>
+    <div class="demo-banner-actions">
+      <button class="btn btn-xs btn-secondary" onclick="openDemoLoginModal()">👤 Demo Girişi / Rol Değiştir</button>
+      <button class="btn btn-xs btn-primary" onclick="startGuidedDemoTour()">🚀 Hızlı Demo Turu</button>
+      <button class="close-banner-btn" onclick="document.getElementById('demoBanner').style.display='none'" title="Bildirimi Kapat">&times;</button>
+    </div>
+  </div>
+
   <div class="app-layout">
     <!-- Header -->
     <header class="app-header">
       <div class="header-brand">
         <div class="logo-icon">🐄</div>
         <div>
-          <h1>AgriTwin <span class="badge-accent">Faz 6: RTLS &amp; AI Asistan</span></h1>
+          <h1>AgriTwin <span class="badge-accent">Endüstriyel Dijital İkiz</span></h1>
           <p class="subtitle">Mekânsal Mikroklima Izgarası, UWB Konum Takibi &amp; Doğal Dil Çiftlik Danışmanı</p>
         </div>
       </div>
 
       <div class="header-status">
+        <!-- Demo User Profile Badge -->
+        <div class="demo-user-pill" id="demoUserPill" onclick="openDemoLoginModal()" title="Demo Kullanıcı Profilini ve Rolünü Değiştir">
+          <span class="demo-user-avatar" id="demoUserAvatar">🩺</span>
+          <div class="demo-user-text">
+            <span class="demo-user-name" id="demoUserName">Dr. Mehmet Yılmaz</span>
+            <span class="demo-user-role" id="demoUserRole">Baş Hekim</span>
+          </div>
+          <span class="badge" style="background:rgba(56,189,248,0.2); color:#38bdf8; font-size:0.65rem; padding:0.15rem 0.35rem; margin-left:0.25rem;">Demo Girişi ▾</span>
+        </div>
+
         <!-- Edge Network Status -->
         <button id="btnToggleEdge" class="status-pill edge-btn" onclick="toggleEdgeConnection()" title="Kırsal bağlantı kopması / Edge yerel tamponlama testi">
           <span class="edge-dot online" id="edgeDot"></span>
@@ -1184,6 +1207,126 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeReportModalDirect()">Kapat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Demo User Login & Persona Modal -->
+  <div id="demoLoginModal" class="modal-backdrop" onclick="closeDemoLoginModal(event)">
+    <div class="modal-dialog modal-lg" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h2>👤 Demo Kullanıcı Girişi &amp; Çiftlik Rolleri</h2>
+          <span class="badge success">Şifresiz / Tek Tıkla Anında Giriş</span>
+        </div>
+        <button class="close-btn" onclick="closeDemoLoginModalDirect()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="color:var(--text-secondary); font-size:0.88rem; margin-bottom:1.25rem;">
+          AgriTwin Dijital İkiz platformunu farklı kurumsal rollerin gözünden deneyimlemek için aşağıdaki demo profillerinden birini seçiniz. Her profil arayüz yetkilerini ve Yapay Zeka Danışmanı çıktılarını özelleştirir.
+        </p>
+
+        <div class="demo-personas-grid">
+          <!-- Persona 1: Baş Veteriner Hekim -->
+          <div class="persona-card active" id="personaCard_vet" onclick="selectDemoPersona('vet')">
+            <div class="persona-card-header">
+              <span class="persona-avatar">🩺</span>
+              <div>
+                <h4>Dr. Mehmet Yılmaz</h4>
+                <span class="persona-title">Baş Veteriner Hekim &amp; Sürü Danışmanı</span>
+              </div>
+              <span class="persona-active-badge">Aktif Profil</span>
+            </div>
+            <div class="persona-desc">
+              Sürü klinik sağlığı, mastitis antibiyotik arınma karantinası, doğumhane distosi erken uyarısı ve optik Brix kolostrum kalitesi kontrolleri.
+            </div>
+            <div class="persona-tags">
+              <span>Reçeteleme</span>
+              <span>Karantina Kilidi</span>
+              <span>CES Distosi DSS</span>
+              <span>Brix IgG</span>
+            </div>
+          </div>
+
+          <!-- Persona 2: Çiftlik Yöneticisi -->
+          <div class="persona-card" id="personaCard_manager" onclick="selectDemoPersona('manager')">
+            <div class="persona-card-header">
+              <span class="persona-avatar">🚜</span>
+              <div>
+                <h4>Selim Aksoy</h4>
+                <span class="persona-title">Çiftlik Müdürü &amp; Kıdemli Zooteknist</span>
+              </div>
+              <span class="persona-active-badge">Aktif Profil</span>
+            </div>
+            <div class="persona-desc">
+              Çok amaçlı TMR rasyon Pareto optimizasyonu, Juno yem itici &amp; Discovery gübre robotu filo navigasyonu ve sürü ayırma kapısı yönetimi.
+            </div>
+            <div class="persona-tags">
+              <span>TMR Rasyon</span>
+              <span>Robot Filosu</span>
+              <span>Ayırma Kapısı</span>
+              <span>Finansal ROI</span>
+            </div>
+          </div>
+
+          <!-- Persona 3: Enerji Mühendisi -->
+          <div class="persona-card" id="personaCard_energy" onclick="selectDemoPersona('energy')">
+            <div class="persona-card-header">
+              <span class="persona-avatar">⚡</span>
+              <div>
+                <h4>Müh. Emre Demir</h4>
+                <span class="persona-title">Biyogaz &amp; Kojenerasyon (CHP) Mühendisi</span>
+              </div>
+              <span class="persona-active-badge">Aktif Profil</span>
+            </div>
+            <div class="persona-desc">
+              Anaerobik atık fermantasyonu, biyogaz debisi, metan yüzdesi, CHP elektrik kojenerasyonu ve şebekeye temiz enerji satışı takibi.
+            </div>
+            <div class="persona-tags">
+              <span>Biyogaz CHP</span>
+              <span>%506 Öz Yeterlilik</span>
+              <span>Net-Zero Karbon</span>
+              <span>Bio-Gübre</span>
+            </div>
+          </div>
+
+          <!-- Persona 4: Genetik Islah Uzmanı -->
+          <div class="persona-card" id="personaCard_genetics" onclick="selectDemoPersona('genetics')">
+            <div class="persona-card-header">
+              <span class="persona-avatar">🧬</span>
+              <div>
+                <h4>Selin Kaya</h4>
+                <span class="persona-title">Genomik Islah &amp; Boğa Eşleştirme Uzmanı</span>
+              </div>
+              <span class="persona-active-badge">Aktif Profil</span>
+            </div>
+            <div class="persona-desc">
+              USDA Net Merit (NM$), TPI skorları, akrabalık katsayısı (F &lt; %6.25) denetimi ve dişi ayrıştırılmış sperma AI boğa eşleştirmesi.
+            </div>
+            <div class="persona-tags">
+              <span>Net Merit (NM$)</span>
+              <span>Pedigri Ağacı</span>
+              <span>Inbreeding (F)</span>
+              <span>Katalog Boğaları</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Mock Scenario Trigger Bar -->
+        <div class="demo-quick-scenarios-bar" style="margin-top:1.5rem; padding:1rem; background:rgba(255,255,255,0.03); border-radius:8px; border:1px solid rgba(255,255,255,0.08);">
+          <h4 style="font-size:0.85rem; margin-bottom:0.5rem; color:#38bdf8;">🎯 Hızlı Demo Senaryoları (Anında Test Edin):</h4>
+          <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+            <button class="btn btn-secondary btn-xs" onclick="quickLaunchDemo('dystocia')">🚨 Güç Doğum (Distosi) Testi</button>
+            <button class="btn btn-secondary btn-xs" onclick="quickLaunchDemo('mastitis')">🦠 Subklinik Mastitis Testi</button>
+            <button class="btn btn-secondary btn-xs" onclick="quickLaunchDemo('sara')">🧪 Rumen Asidozu (SARA) Testi</button>
+            <button class="btn btn-secondary btn-xs" onclick="quickLaunchDemo('ration')">🌾 Düşük Karbon Rasyon Testi</button>
+            <button class="btn btn-secondary btn-xs" onclick="quickLaunchDemo('robotics')">🤖 Otonom Robot Filosu Testi</button>
+            <button class="btn btn-secondary btn-xs" onclick="quickLaunchDemo('energy')">⚡ Net-Zero Biyogaz Enerji Testi</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="closeDemoLoginModalDirect()">Seçilen Profille Devam Et</button>
       </div>
     </div>
   </div>

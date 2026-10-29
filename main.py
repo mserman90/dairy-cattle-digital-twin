@@ -22,6 +22,9 @@ class AssistantQueryRequest(BaseModel):
 class ApplyRationRequest(BaseModel):
     strategy_id: str
 
+class SwitchPersonaRequest(BaseModel):
+    persona_id: str = "vet"
+
 class PrescribeRequest(BaseModel):
     animal_id: str
     drug: str = "Sefalosporin İntramammar"
@@ -264,6 +267,53 @@ def get_ai_bull_catalog():
 def get_mating_recommendations_for_cow(cow_id: str):
     """Belirli bir inek için akrabalık ve genetik kısıtları denetleyerek sıralanmış boğa önerileri"""
     return GenomicBreedingEngine.evaluate_mating_pairs_for_cow(cow_id)
+
+@app.get("/api/demo/personas")
+def get_demo_personas():
+    """Demo kullanıcı profillerini ve yetkilerini döner"""
+    return {
+        "active_persona": "vet",
+        "personas": [
+            {
+                "id": "vet",
+                "name": "Dr. Mehmet Yılmaz",
+                "role": "Baş Veteriner Hekim & Sürü Danışmanı",
+                "avatar": "🩺",
+                "department": "Sürü Sağlığı & Biyogüvenlik",
+                "permissions": ["Reçete Yazma", "Karantina Kilidi", "Doğum & Distosi Müdahalesi", "Brix Kolostrum Onayı"]
+            },
+            {
+                "id": "manager",
+                "name": "Selim Aksoy",
+                "role": "Çiftlik Yöneticisi & Zooteknist",
+                "avatar": "🚜",
+                "department": "Operasyon & TMR Rasyon Yönetimi",
+                "permissions": ["Pareto Rasyon Uygulama", "Robot Filo Kontrolü", "Ayırma Kapısı Yönlendirme", "Finansal ROI"]
+            },
+            {
+                "id": "energy",
+                "name": "Müh. Emre Demir",
+                "role": "Biyogaz & Yenilenebilir Enerji Mühendisi",
+                "avatar": "⚡",
+                "department": "Döngüsel Ekonomi & Kojenerasyon (CHP)",
+                "permissions": ["CHP Jeneratör Ayarı", "Biyogaz Basınç İzleme", "Şebeke Elektrik Satışı", "Karbon Kredisi"]
+            },
+            {
+                "id": "genetics",
+                "name": "Selin Kaya",
+                "role": "Genetik Islah & Suni Tohumlama Danışmanı",
+                "avatar": "🧬",
+                "department": "Genomik Damızlık & Akıllı Çiftleştirme",
+                "permissions": ["Net Merit ($NM$) Seleksiyonu", "Akrabalık (Inbreeding) Denetimi", "Dişi Ayrıştırılmış Boğa Kataloğu"]
+            }
+        ]
+    }
+
+@app.post("/api/demo/switch-persona")
+def switch_demo_persona(req: SwitchPersonaRequest):
+    """Aktif demo kullanıcısını değiştirir"""
+    persona_id = req.persona_id
+    return {"status": "success", "active_persona": persona_id}
 
 # Mount static files
 static_dir = os.path.join(os.path.dirname(__file__), "static")

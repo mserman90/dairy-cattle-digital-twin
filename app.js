@@ -11,24 +11,100 @@ function runClientTick() {
   isClientSideFallback = true;
   if (!clientSimState) clientSimState = JSON.parse(JSON.stringify(GITHUB_PAGES_FALLBACK_STATE));
   clientSimState.simulation_tick += 1;
+  const tick = clientSimState.simulation_tick;
   const now = new Date();
   clientSimState.current_time = now.toISOString();
 
-  // Move robots on map
+  // 1. Dynamic Mock Cow Physiology & Sensor Stream
+  if (clientSimState.animals) {
+    clientSimState.animals.forEach(a => {
+      const isMastitis = a.dss && a.dss.mastitis_risk_score > 0.5;
+      const isEstrus = a.dss && a.dss.estrus_probability > 0.5;
+      const isSara = a.rumen && a.rumen.assessment && a.rumen.assessment.sara_risk_score > 0.5;
+
+      if (a.telemetry) {
+        if (!isSara && !isMastitis) {
+          // Rumination oscillation (gevis getirme)
+          a.telemetry.rumination_minutes_2h = Math.max(30, Math.min(65, Math.round(a.telemetry.rumination_minutes_2h + (Math.random() * 2 - 1))));
+          // Circadian micro-fluctuation in body temp
+          const seed = a.id ? a.id.charCodeAt(a.id.length - 1) : 0;
+          a.telemetry.body_temperature_c = +(38.55 + Math.sin(tick * 0.1 + seed) * 0.12 + (Math.random() * 0.04 - 0.02)).toFixed(2);
+        }
+        if (!isEstrus) {
+          a.telemetry.activity_index = Math.max(160, Math.min(260, Math.round(a.telemetry.activity_index + (Math.random() * 8 - 4))));
+        }
+      }
+
+      // Rumen pH & fermentation dynamics
+      if (a.rumen && a.rumen.telemetry && !isSara) {
+        const seed = a.id ? a.id.charCodeAt(a.id.length - 1) : 0;
+        a.rumen.telemetry.rumen_ph = +(6.38 + Math.sin(tick * 0.08 + seed) * 0.11 + (Math.random() * 0.02 - 0.01)).toFixed(2);
+        a.rumen.telemetry.reticulorumen_temperature_c = +(a.telemetry.body_temperature_c + 0.6).toFixed(2);
+      }
+
+      // 4-Quarter Milking conductivity micro-variation
+      if (a.milking_twin && a.milking_twin.quarters) {
+        Object.keys(a.milking_twin.quarters).forEach(qKey => {
+          const q = a.milking_twin.quarters[qKey];
+          if (!q.is_diverted_to_waste) {
+            q.conductivity_ms_cm = +(5.05 + (Math.random() * 0.08 - 0.04)).toFixed(2);
+          }
+        });
+      }
+    });
+  }
+
+  // 2. Autonomous Barn Robotics Dynamics
   if (clientSimState.robotics) {
     const p = clientSimState.robotics.pusher;
     p.x_m = +(p.x_m + (Math.random() * 0.8 - 0.4)).toFixed(1);
     if (p.x_m > 36) p.x_m = 4;
     if (p.x_m < 2) p.x_m = 35;
+    // Feed height sensor reading fluctuation
+    p.feed_height_sensor_cm = +(16.5 + Math.sin(tick * 0.1) * 2.8).toFixed(1);
+    if (tick % 12 === 0) {
+      p.daily_pushes_completed = Math.min(24, (p.daily_pushes_completed || 8) + 1);
+    }
 
     const c = clientSimState.robotics.collector;
     c.x_m = +(c.x_m + (Math.random() * 0.6 - 0.3)).toFixed(1);
     c.y_m = +(c.y_m + (Math.random() * 0.6 - 0.3)).toFixed(1);
     if (c.x_m > 36) c.x_m = 5;
     if (c.y_m > 22) c.y_m = 4;
+    // Manure tank gradual filling & auto-dump cycle
+    c.tank_fill_pct = ((c.tank_fill_pct || 42) + 1) % 100;
+    if (c.tank_fill_pct > 88) {
+      c.status = "DOCKING_DISCHARGE";
+    } else if (c.tank_fill_pct < 10) {
+      c.status = "VACUUMING";
+    }
   }
 
-  // Move animals slightly in grid
+  // 3. Biogas & Cogeneration (CHP) Live Fluctuation
+  if (clientSimState.energy) {
+    if (clientSimState.energy.digester) {
+      const dig = clientSimState.energy.digester;
+      dig.daily_biogas_production_m3 = +(213.3 + Math.sin(tick * 0.05) * 3.8).toFixed(1);
+      dig.methane_content_pct = +(62.5 + Math.cos(tick * 0.05) * 0.5).toFixed(1);
+    }
+    if (clientSimState.energy.chp) {
+      const chp = clientSimState.energy.chp;
+      chp.daily_electricity_generated_kwh = +(506.6 + Math.sin(tick * 0.05) * 7.2).toFixed(1);
+    }
+  }
+
+  // 4. Barn Microclimate & Dynamic THI
+  if (clientSimState.barn_zones && clientSimState.active_scenario !== "heatwave") {
+    clientSimState.barn_zones.forEach((z, i) => {
+      z.temperature_c = +(22.5 + Math.sin(tick * 0.03 + i) * 1.1).toFixed(1);
+      z.relative_humidity_pct = +(58.0 + Math.cos(tick * 0.03 + i) * 2.2).toFixed(1);
+      const t = z.temperature_c;
+      const rh = z.relative_humidity_pct;
+      z.thi_index = +(0.8 * t + (rh / 100.0) * (t - 14.4) + 46.4).toFixed(1);
+    });
+  }
+
+  // 5. Move animals slightly in UWB grid
   if (clientGridState && clientGridState.positions) {
     clientGridState.positions.forEach(pos => {
       pos.x_m = +(pos.x_m + (Math.random() * 0.4 - 0.2)).toFixed(1);
@@ -140,6 +216,8 @@ function handleClientScenario(scen) {
 
 function processClientAiQuery(query) {
   const state = currentFarmState || clientSimState || GITHUB_PAGES_FALLBACK_STATE;
+  const persona = (typeof currentDemoPersona !== 'undefined' && currentDemoPersona) ? currentDemoPersona : { name: "Dr. Mehmet Yılmaz", role: "Baş Hekim" };
+  const userPrefix = `👤 <em>Sayın ${persona.name} (${persona.role}),</em><br><br>`;
   const q = query.toLowerCase()
     .replace(/ı/g, 'i').replace(/ğ/g, 'g').replace(/ü/g, 'u')
     .replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c');
@@ -149,7 +227,7 @@ function processClientAiQuery(query) {
     const mat = state.maternity;
     const dys = mat && mat.calving_twins ? mat.calving_twins.find(t => t.dystocia_assessment.alert_level === "CRITICAL_DYSTOCIA_ALARM") : null;
     if (dys) {
-      return `🚨 <strong>DİSTOSİ (GÜÇ DOĞUM) ACİL ALARMI:</strong><br><br>` +
+      return userPrefix + `🚨 <strong>DİSTOSİ (GÜÇ DOĞUM) ACİL ALARMI:</strong><br><br>` +
         `- <strong>Hayvan:</strong> <strong>${dys.cow_name} (${dys.cow_id})</strong> - Gebelik: ${dys.gestation_days}. Gün<br>` +
         `- <strong>2. Evre Ikınma Süresi:</strong> <strong>${dys.dystocia_assessment.stage_2_duration_minutes} dakika</strong> (Kritik Eşik: &gt;70 dk)<br>` +
         `- <strong>Fetal Pozisyon:</strong> <strong>${dys.dystocia_assessment.calf_presentation}</strong> (Makat / Ters Geliş)<br>` +
@@ -158,7 +236,7 @@ function processClientAiQuery(query) {
         `- <strong>Müdahale Kararı:</strong> ${dys.dystocia_assessment.recommended_action}<br>` +
         `- <strong>Ayırma Kapısı:</strong> İnek anında Revir / Doğumhane Bölmesine yönlendirilmiştir.`;
     }
-    return `🤰 <strong>Doğumhane & Buzağıhane Durumu:</strong><br><br>` +
+    return userPrefix + `🤰 <strong>Doğumhane & Buzağıhane Durumu:</strong><br><br>` +
       `- <strong>Doğumhane Doluluğu:</strong> 3 / 6 İnek<br>` +
       `- <strong>24 Saat İçinde Doğum Beklenen:</strong> 1 Baş (Nazlı - TR-34-106)<br>` +
       `- <strong>-20°C Kolostrum Bankası:</strong> 42.5 L (>%22 Brix rezervi)<br>` +
@@ -167,7 +245,7 @@ function processClientAiQuery(query) {
 
   // 2. Kolostrum & Brix & FPT
   if (["kolostrum", "agiz sutu", "brix", "fpt"].some(w => q.includes(w))) {
-    return `🍼 <strong>Optik Brix Kolostrum & Bağışıklık (FPT) Raporu:</strong><br><br>` +
+    return userPrefix + `🍼 <strong>Optik Brix Kolostrum & Bağışıklık (FPT) Raporu:</strong><br><br>` +
       `- <strong>Anne:</strong> Benekli (TR-34-102)<br>` +
       `- <strong>İlk Sağım:</strong> 6.8 Litre<br>` +
       `- <strong>Optik Brix:</strong> <strong>%24.5 Brix</strong> (Üstün Kalite - Yeşil)<br>` +
@@ -182,14 +260,14 @@ function processClientAiQuery(query) {
     const cow = state.animals.find(a => q.includes(a.name.toLowerCase()) || q.includes(a.id.toLowerCase()));
     if (cow && gen && gen.mating_matrix_recommendations && gen.mating_matrix_recommendations[cow.id]) {
       const top = gen.mating_matrix_recommendations[cow.id][0];
-      return `🧬 <strong>${cow.name} (${cow.id}) Akıllı Genomik Çiftleştirme Raporu:</strong><br><br>` +
+      return userPrefix + `🧬 <strong>${cow.name} (${cow.id}) Akıllı Genomik Çiftleştirme Raporu:</strong><br><br>` +
         `- <strong>Bireysel Net Merit:</strong> $${cow.pedigree ? cow.pedigree.gebv.net_merit_dollars : 800} NM$<br>` +
         `- <strong>Önerilen 1. Boğa:</strong> <strong>${top.bull.bull_name}</strong> (${top.bull.semen_company})<br>` +
         `- <strong>Tahmini Yavru Net Merit:</strong> <strong>$${top.expected_progeny_net_merit} NM$</strong> (+${top.expected_progeny_milk_kg} kg süt)<br>` +
         `- <strong>Akrabalık Katsayısı (F):</strong> <strong>%${top.progeny_inbreeding_f_pct.toFixed(2)}</strong> (✅ Güvenli &lt; %6.25)<br>` +
         `- <strong>Sperma Türü:</strong> <code>${top.recommendation_type}</code>`;
     }
-    return `🧬 <strong>Sürü Genomik Islah & Akrabalık (Inbreeding) Tablosu:</strong><br><br>` +
+    return userPrefix + `🧬 <strong>Sürü Genomik Islah & Akrabalık (Inbreeding) Tablosu:</strong><br><br>` +
       `- <strong>Genotiplenen Sürü:</strong> 6 Baş Holstein Friesian<br>` +
       `- <strong>Sürü Ortalama Net Merit:</strong> <strong>$750 NM$</strong> (TPI: 2,713)<br>` +
       `- <strong>Sürü Inbreeding Oranı (F):</strong> <strong>%5.77</strong> (Kritik Eşik: &lt; %6.25 Güvenli)<br>` +
@@ -200,7 +278,7 @@ function processClientAiQuery(query) {
   // 4. Robot Filosu (Juno & Discovery)
   if (["robot", "juno", "discovery", "yem itici", "gubre robotu", "filo"].some(w => q.includes(w))) {
     const rob = state.robotics;
-    return `🤖 <strong>Otonom Ahır İçi Robot Filosu İkizi:</strong><br><br>` +
+    return userPrefix + `🤖 <strong>Otonom Ahır İçi Robot Filosu İkizi:</strong><br><br>` +
       `<strong>1. Juno-X Otonom Yem İtici:</strong><br>` +
       `- Durum: ${rob ? rob.pusher.status : 'İtme Yapıyor'} (Yem yüksekliği: 18.5 cm, Helezon: 85 rpm)<br>` +
       `- Katkı: Kuru madde tüketimi +%3.2 DMI, süt verimi +1.1 kg/gün.<br><br>` +
@@ -212,7 +290,7 @@ function processClientAiQuery(query) {
 
   // 5. Biyogaz & Enerji
   if (["enerji", "biyogaz", "chp", "elektrik", "kojenerasyon", "karbon", "metan"].some(w => q.includes(w))) {
-    return `⚡ <strong>Döngüsel Çiftlik Biyogazı & Kojenerasyon (CHP) İkizi:</strong><br><br>` +
+    return userPrefix + `⚡ <strong>Döngüsel Çiftlik Biyogazı & Kojenerasyon (CHP) İkizi:</strong><br><br>` +
       `- <strong>Günlük Üretilen Biyogaz:</strong> 213.3 m³/gün (%62.5 CH₄)<br>` +
       `- <strong>CHP Elektrik Üretimi:</strong> <strong>506.6 kWh/gün</strong> (60 kW Jeneratör)<br>` +
       `- <strong>Çiftlik Tüketimi:</strong> 100.0 kWh/gün<br>` +
@@ -225,57 +303,57 @@ function processClientAiQuery(query) {
   if (["mastitis", "scc", "somatik", "iletkenlik", "meme", "sagim"].some(w => q.includes(w))) {
     const inf = state.animals.find(a => a.dss.mastitis_risk_score > 0.5 || (a.milking_twin && a.milking_twin.is_any_quarter_diverted));
     if (inf) {
-      return `🦠 <strong>Subklinik / Robotik Mastitis Uyarısı:</strong><br><br>` +
+      return userPrefix + `🦠 <strong>Subklinik / Robotik Mastitis Uyarısı:</strong><br><br>` +
         `- <strong>Hayvan:</strong> <strong>${inf.name} (${inf.id})</strong><br>` +
         `- <strong>Mastitis Riski:</strong> %${Math.round(inf.dss.mastitis_risk_score * 100)}<br>` +
         `- <strong>Robotik 4 Lob Durumu:</strong> Sol Arka (LR) lobunda 620,000 SCC tespit edilip sütü atık vanasına tahliye edildi.<br>` +
         `- <strong>Kurtarılan Sağlıklı Süt:</strong> Diğer 3 lobun sağlıklı sütü ana tanka kabul edilmiştir.`;
     }
-    return `✅ <strong>Meme Sağlığı & Sağım Durumu İdeal:</strong> Sürüde klinik mastitis tespit edilmemiştir. Ortalama somatik hücre sayısı normaller dahilindedir (<180,000 SCC).`;
+    return userPrefix + `✅ <strong>Meme Sağlığı & Sağım Durumu İdeal:</strong> Sürüde klinik mastitis tespit edilmemiştir. Ortalama somatik hücre sayısı normaller dahilindedir (<180,000 SCC).`;
   }
 
   // 7. Topallık & BCS Kondisyon
   if (["topallik", "ayak", "tirnak", "yuruyus", "lameness", "bcs", "kondisyon"].some(w => q.includes(w))) {
     const lame = state.animals.find(a => a.vision && a.vision.lameness.score >= 2.5);
     if (lame) {
-      return `🦶 <strong>3D Kamera Topallık (Lameness) Tespiti:</strong><br><br>` +
+      return userPrefix + `🦶 <strong>3D Kamera Topallık (Lameness) Tespiti:</strong><br><br>` +
         `- <strong>Hayvan:</strong> <strong>${lame.name} (${lame.id})</strong><br>` +
         `- <strong>Sprecher Skoru:</strong> ${lame.vision.lameness.score.toFixed(1)} / 5.0<br>` +
         `- <strong>Sırt Kemerleşmesi:</strong> %${Math.round(lame.vision.lameness.back_curvature_index * 100)}<br>` +
         `- <strong>Karar:</strong> Ayırma kapısı ineği Tırnak Bakım Locasına sevk etmiştir.`;
     }
-    return `✅ <strong>Tırnak ve Yürüyüş Sağlığı İdeal:</strong> 3D derinlik kamerası tüm ineklerin sırt çizgisini düz (Skor 1) ve adım uzunluklarını simetrik olarak teyit etmiştir.`;
+    return userPrefix + `✅ <strong>Tırnak ve Yürüyüş Sağlığı İdeal:</strong> 3D derinlik kamerası tüm ineklerin sırt çizgisini düz (Skor 1) ve adım uzunluklarını simetrik olarak teyit etmiştir.`;
   }
 
   // 8. Rumen Asidozu (SARA) & Rasyon
   if (["sara", "rumen", "asidoz", "ph", "vfa", "rasyon"].some(w => q.includes(w))) {
     const acid = state.animals.find(a => a.rumen && a.rumen.assessment.sara_risk_score >= 0.6);
     if (acid) {
-      return `🧪 <strong>SARA Rumen Asidozu Alarmı:</strong><br><br>` +
+      return userPrefix + `🧪 <strong>SARA Rumen Asidozu Alarmı:</strong><br><br>` +
         `- <strong>Hayvan:</strong> <strong>${acid.name} (${acid.id})</strong><br>` +
         `- <strong>Rumen pH:</strong> ${acid.rumen.telemetry.rumen_ph.toFixed(2)} (Eşik: &lt; 5.80)<br>` +
         `- <strong>Asetat:Propiyonat:</strong> ${acid.rumen.telemetry.acetate_to_propionate_ratio.toFixed(2)} (Bozulmuş)<br>` +
         `- <strong>Öneri:</strong> 150g sodyum bikarbonat tampon besleme takviyesi yapınız.`;
     }
-    return `🌾 <strong>Rasyon & Rumen Durumu:</strong> Günlük rasyonda BALANCED_PARETO stratejisi uygulanmaktadır. Rumen pH 6.35 - 6.50 ile ideal mikrobiyota fermantasyonu sağlanmaktadır.`;
+    return userPrefix + `🌾 <strong>Rasyon & Rumen Durumu:</strong> Günlük rasyonda BALANCED_PARETO stratejisi uygulanmaktadır. Rumen pH 6.35 - 6.50 ile ideal mikrobiyota fermantasyonu sağlanmaktadır.`;
   }
 
   // 9. Kızgınlık / Estrus
   if (["kizginlik", "estrus", "tohumlama", "gebe"].some(w => q.includes(w))) {
     const est = state.animals.find(a => a.dss.estrus_probability >= 0.7);
     if (est) {
-      return `⚡ <strong>Kızgınlık (Estrus) Tespiti:</strong><br><br>` +
+      return userPrefix + `⚡ <strong>Kızgınlık (Estrus) Tespiti:</strong><br><br>` +
         `- <strong>Hayvan:</strong> <strong>${est.name} (${est.id})</strong><br>` +
         `- <strong>Kızgınlık Olasılığı:</strong> %${Math.round(est.dss.estrus_probability * 100)}<br>` +
         `- <strong>Aktivite Artışı:</strong> ${est.telemetry.activity_index} adım/saat (+%185 artış)<br>` +
         `- <strong>Tohumlama Zamanı:</strong> Önümüzdeki 8-12 saat içinde elit dişi sperma ile tohumlama önerilir.`;
     }
-    return `ℹ️ <strong>Kızgınlık Takibi:</strong> Şu an sürüde aktif kızgınlık döngüsüne giren inek bulunmamaktadır. Telemetri sürekli takip edilmektedir.`;
+    return userPrefix + `ℹ️ <strong>Kızgınlık Takibi:</strong> Şu an sürüde aktif kızgınlık döngüsüne giren inek bulunmamaktadır. Telemetri sürekli takip edilmektedir.`;
   }
 
   // 10. Genel Durum & Finans
   if (["finans", "para", "gelir", "maliyet", "roi", "kar"].some(w => q.includes(w))) {
-    return `💰 <strong>Finansal ROI & Süt Gelir Tablosu (80 Baş Projeksiyonu):</strong><br><br>` +
+    return userPrefix + `💰 <strong>Finansal ROI & Süt Gelir Tablosu (80 Baş Projeksiyonu):</strong><br><br>` +
       `- <strong>Günlük Brüt Süt Satış Geliri:</strong> 42,240.00 TL/gün<br>` +
       `- <strong>Günlük TMR Yem Gideri:</strong> 15,408.00 TL/gün<br>` +
       `- <strong>Yem Üzeri Günlük Net Gelir (IOFC):</strong> 26,832.00 TL/gün<br>` +
@@ -283,7 +361,7 @@ function processClientAiQuery(query) {
       `- <strong>Yatırım Geri Dönüş Süresi (ROI):</strong> <strong>1.1 Yıl</strong>`;
   }
 
-  return `🤖 <strong>AgriTwin AI Çiftlik Danışmanı:</strong><br><br>` +
+  return userPrefix + `🤖 <strong>AgriTwin AI Çiftlik Danışmanı:</strong><br><br>` +
     `"${query}" sorunuz çiftlik dijital ikizi telemetrisi ile analiz edildi.<br>` +
     `- <strong>Sürü Durumu:</strong> 6 Baş Holstein Friesian (%100 telemetri bağlı).<br>` +
     `- <strong>Aktif Sistemler:</strong> RTLS Isı Haritası, Otonom Robot Filosu, 4 Loblu Sağım Robotu, Biyogaz CHP ve Genomik Pedigri aktiftir.<br>` +
@@ -2316,4 +2394,147 @@ function generateClientIcarAdeJson() {
     },
     records: records
   };
+}
+
+
+// --- DEMO KULLANICI GİRİŞİ, PROFİLLER & HIZLI DEMO YÖNETİMİ ---
+const DEMO_PERSONAS = {
+  "vet": {
+    id: "vet",
+    name: "Dr. Mehmet Yılmaz",
+    role: "Baş Hekim",
+    fullRole: "Baş Veteriner Hekim & Sürü Danışmanı",
+    avatar: "🩺",
+    department: "Sürü Sağlığı & Biyogüvenlik",
+    permissions: ["Reçeteleme", "Karantina Kilidi", "CES Distosi DSS", "Brix IgG"],
+    greeting: "Sürü klinik göstergeleri, 4-loblu robotik mastitis ve doğumhane distosi erken uyarı sistemleri yetkinizde taranmaktadır.",
+    welcomeAction: "Doğum & Distosi veya Denetim Raporu panellerini inceleyebilirsiniz."
+  },
+  "manager": {
+    id: "manager",
+    name: "Selim Aksoy",
+    role: "Çiftlik Müdürü",
+    fullRole: "Çiftlik Yöneticisi & Kıdemli Zooteknist",
+    avatar: "🚜",
+    department: "Operasyon & TMR Rasyon Yönetimi",
+    permissions: ["TMR Rasyon", "Robot Filosu", "Ayırma Kapısı", "Finansal ROI"],
+    greeting: "TMR rasyon Pareto optimizasyonu, Juno-X yem itici ve Discovery-Vac gübre robotu otonom navigasyonda aktiftir.",
+    welcomeAction: "Rasyon & Karbon İkizi veya Robot Filosu panellerini inceleyebilirsiniz."
+  },
+  "energy": {
+    id: "energy",
+    name: "Müh. Emre Demir",
+    role: "Enerji Mühendisi",
+    fullRole: "Biyogaz & Kojenerasyon (CHP) Mühendisi",
+    avatar: "⚡",
+    department: "Döngüsel Ekonomi & Kojenerasyon (CHP)",
+    permissions: ["Biyogaz CHP", "%506 Öz Yeterlilik", "Net-Zero Karbon", "Bio-Gübre"],
+    greeting: "Anaerobik atık fermantasyonu ve 60 kW kojenerasyon ünitesi %506 net-zero enerji fazlası üretmektedir.",
+    welcomeAction: "Biyogaz & Enerji İkizi panelini inceleyebilirsiniz."
+  },
+  "genetics": {
+    id: "genetics",
+    name: "Selin Kaya",
+    role: "Genetik Uzmanı",
+    fullRole: "Genomik Islah & Boğa Eşleştirme Uzmanı",
+    avatar: "🧬",
+    department: "Genomik Damızlık & Akıllı Çiftleştirme",
+    permissions: ["Net Merit (NM$)", "Pedigri Ağacı", "Inbreeding (F)", "Katalog Boğaları"],
+    greeting: "Sürü genotipleri taranmış olup akrabalık katsayısı F <%6.25 güvenli sınırında tutulmaktadır.",
+    welcomeAction: "Genomik & Pedigri panelini inceleyebilirsiniz."
+  }
+};
+
+let currentDemoPersona = DEMO_PERSONAS["vet"];
+
+function openDemoLoginModal() {
+  const modal = document.getElementById("demoLoginModal");
+  if (modal) modal.classList.add("active");
+}
+
+function closeDemoLoginModal(e) {
+  if (e.target.id === "demoLoginModal") {
+    closeDemoLoginModalDirect();
+  }
+}
+
+function closeDemoLoginModalDirect() {
+  const modal = document.getElementById("demoLoginModal");
+  if (modal) modal.classList.remove("active");
+}
+
+async function selectDemoPersona(personaId) {
+  const persona = DEMO_PERSONAS[personaId];
+  if (!persona) return;
+  currentDemoPersona = persona;
+
+  // Update UI Persona Card highlight
+  document.querySelectorAll(".persona-card").forEach(c => c.classList.remove("active"));
+  const activeCard = document.getElementById(`personaCard_${personaId}`);
+  if (activeCard) activeCard.classList.add("active");
+
+  // Update Header Pill
+  const avatarEl = document.getElementById("demoUserAvatar");
+  const nameEl = document.getElementById("demoUserName");
+  const roleEl = document.getElementById("demoUserRole");
+  if (avatarEl) avatarEl.textContent = persona.avatar;
+  if (nameEl) nameEl.textContent = persona.name;
+  if (roleEl) roleEl.textContent = persona.role;
+
+  // Try notifying backend if available
+  try {
+    await fetch("/api/demo/switch-persona", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ persona_id: personaId })
+    });
+  } catch (e) {}
+
+  // Post Welcome in AI Danisman
+  const chat = document.getElementById("aiChatResponse");
+  if (chat) {
+    chat.innerHTML = `👤 <strong>Demo Oturumu Değiştirildi:</strong> <strong>${persona.name}</strong> (${persona.fullRole}) olarak oturum açıldı.<br><br>` +
+      `- <strong>Departman:</strong> ${persona.department}<br>` +
+      `- <strong>Aktif Yetkiler:</strong> ${persona.permissions.map(p => `<code>${p}</code>`).join(" ")}<br>` +
+      `- <strong>Sistem Durumu:</strong> ${persona.greeting}<br>` +
+      `💡 <em>Öneri: ${persona.welcomeAction}</em>`;
+  }
+}
+
+async function quickLaunchDemo(action) {
+  closeDemoLoginModalDirect();
+  if (action === "dystocia") {
+    await selectDemoPersona("vet");
+    await triggerScenario("dystocia");
+    setTimeout(() => openCalvingModal(), 350);
+  } else if (action === "mastitis") {
+    await selectDemoPersona("vet");
+    await triggerScenario("mastitis");
+    setTimeout(() => openXaiModal("TR-34-102"), 350);
+  } else if (action === "sara") {
+    await selectDemoPersona("vet");
+    await triggerScenario("sara");
+    setTimeout(() => openXaiModal("TR-34-103"), 350);
+  } else if (action === "ration") {
+    await selectDemoPersona("manager");
+    setTimeout(() => openRationModal(), 200);
+  } else if (action === "robotics") {
+    await selectDemoPersona("manager");
+    setTimeout(() => openRoboticsModal(), 200);
+  } else if (action === "energy") {
+    await selectDemoPersona("energy");
+    setTimeout(() => openEnergyModal(), 200);
+  }
+}
+
+async function startGuidedDemoTour() {
+  const chat = document.getElementById("aiChatResponse");
+  if (chat) {
+    chat.innerHTML = `🚀 <strong>AgriTwin Rehberli Demo Turu Başlatıldı!</strong><br><br>` +
+      `1️⃣ <strong>Sürü & Mikroklima:</strong> 6 Baş Holstein telemetrisi ve 8x5 RTLS UWB ısı haritası canlı akıştadır.<br>` +
+      `2️⃣ <strong>Fizyolojik İkiz:</strong> Geviş, rumen pH, 4 loblu sağım iletkenliği ve vücut sıcaklığı dinamik salınımdadır.<br>` +
+      `3️⃣ <strong>Otonom Filo & Enerji:</strong> Juno yem itici ve Discovery vakum robotu devriye gezmekte, Biyogaz CHP %506 net-zero enerji üretmektedir.<br>` +
+      `4️⃣ <strong>Akıllı DSS:</strong> Yukarıdaki <em>"Demo Girişi / Rol Değiştir"</em> butonuyla farklı profesyonel rolleri deneyimleyebilir veya başlıktaki modülleri açabilirsiniz.`;
+  }
+  advanceStep();
 }

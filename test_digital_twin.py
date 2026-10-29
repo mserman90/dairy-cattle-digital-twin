@@ -396,6 +396,28 @@ def test_genomic_breeding_and_inbreeding_twin():
     assert resp_herd["category"] == "HERD_GENOMICS_SUMMARY"
     assert "Net Merit" in resp_herd["answer"]
 
+def test_demo_personas_and_modes():
+    """Demo kullanıcı rolleri ve yetkilerinin doğrulanması"""
+    from fastapi.testclient import TestClient
+    from main import app
+    client = TestClient(app)
+
+    res = client.get("/api/demo/personas")
+    assert res.status_code == 200
+    data = res.json()
+    assert "personas" in data
+    assert len(data["personas"]) == 4
+
+    roles = [p["id"] for p in data["personas"]]
+    assert "vet" in roles
+    assert "manager" in roles
+    assert "energy" in roles
+    assert "genetics" in roles
+
+    switch_res = client.post("/api/demo/switch-persona", json={"persona_id": "manager"})
+    assert switch_res.status_code == 200
+    assert switch_res.json()["active_persona"] == "manager"
+
 
 
 

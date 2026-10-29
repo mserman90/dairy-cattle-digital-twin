@@ -173,6 +173,39 @@ openGenomicsModal().then(() => {
   closeModalDirect();
   console.log("  xaiModal closed?", !getMockElement("xaiModal").classList.contains("active"));
 
+  // 14. Demo User Personas & Persona Switch
+  console.log("Testing 14. Demo User Personas & Persona Switching...");
+  openDemoLoginModal();
+  console.log("  demoLoginModal active?", getMockElement("demoLoginModal").classList.contains("active"));
+  selectDemoPersona("manager");
+  console.log("  Active persona after switch to manager:", currentDemoPersona.name, `(${currentDemoPersona.role})`);
+  const mgrAiAns = processClientAiQuery("finansal roi ve süt geliri");
+  console.log("  AI answer greets manager?", mgrAiAns.includes("Selim Aksoy"));
+  selectDemoPersona("energy");
+  console.log("  Active persona after switch to energy:", currentDemoPersona.name);
+  selectDemoPersona("vet");
+  console.log("  Active persona reset to vet:", currentDemoPersona.name);
+  closeDemoLoginModalDirect();
+  console.log("  demoLoginModal closed?", !getMockElement("demoLoginModal").classList.contains("active"));
+
+  // 15. Dynamic Mock Sensor Stream Oscillation
+  console.log("Testing 15. Dynamic Mock Sensor Stream Oscillation...");
+  const initialTick = clientSimState.simulation_tick;
+  const initialPusherHeight = clientSimState.robotics.pusher.feed_height_sensor_cm;
+  runClientTick();
+  runClientTick();
+  console.log("  Tick advanced from", initialTick, "to", clientSimState.simulation_tick);
+  console.log("  Feed height sensor dynamically updated:", clientSimState.robotics.pusher.feed_height_sensor_cm, "cm");
+  console.log("  Discovery manure tank fill pct:", clientSimState.robotics.collector.tank_fill_pct, "%");
+  console.log("  Cow 1 rumen pH:", clientSimState.animals[0].rumen.telemetry.rumen_ph);
+  console.log("  Cow 1 body temp:", clientSimState.animals[0].telemetry.body_temperature_c, "°C");
+
+  // 16. Quick Launch Demo & Tour
+  console.log("Testing 16. Quick Launch Demo & Guided Tour...");
+  startGuidedDemoTour();
+  console.log("  Tour launched, AI response updated?", getMockElement("aiChatResponse").innerHTML.includes("AgriTwin Rehberli Demo Turu"));
+  quickLaunchDemo("ration");
+
   console.log("\n>>> ALL TESTS COMPLETED SUCCESSFULLY! <<<");
 }).catch(err => {
   console.error("Runtime test error:", err);

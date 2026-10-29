@@ -39,7 +39,12 @@ const requiredFunctions = [
   'applySelectedRation',
   'sendRobotAction',
   'prescribeTreatment',
-  'resolveIntervention'
+  'resolveIntervention',
+  'openDemoLoginModal',
+  'closeDemoLoginModalDirect',
+  'selectDemoPersona',
+  'quickLaunchDemo',
+  'startGuidedDemoTour'
 ];
 
 let allPassed = true;
