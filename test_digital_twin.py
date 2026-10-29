@@ -453,6 +453,72 @@ def test_farm_devices_fleet_simulation():
     assert fleet.devices["DEV-HVLS-FANS"].status == "RUNNING"
     assert "350 RPM" in fleet.devices["DEV-HVLS-FANS"].key_metrics.get("Fan Devri (VFD)", "") or "350 RPM" in fleet.devices["DEV-HVLS-FANS"].operational_mode
 
+def test_user_registration_and_login():
+    """Kullanıcı kaydı, parola doğrulama, oturum açma ve kimlik testleri"""
+    from fastapi.testclient import TestClient
+    from main import app
+    client = TestClient(app)
+
+    # 1. Test Demo user login
+    res_login = client.post("/api/auth/login", json={
+        "username_or_email": "vet",
+        "password": "demo123"
+    })
+    assert res_login.status_code == 200
+    data = res_login.json()
+    assert data["status"] == "success"
+    assert data["user"]["full_name"] == "Dr. Mehmet Yılmaz"
+    assert "token" in data
+
+    # 2. Test Invalid password
+    res_bad = client.post("/api/auth/login", json={
+        "username_or_email": "vet",
+        "password": "wrongpassword"
+    })
+    assert res_bad.status_code == 200
+    assert res_bad.json()["status"] == "error"
+    assert "Hatalı parola" in res_bad.json()["message"]
+
+    # 3. Test Register new farm user
+    import uuid
+    unique_user = f"user_{uuid.uuid4().hex[:8]}"
+    unique_email = f"{unique_user}@agritwin.com"
+    res_reg = client.post("/api/auth/register", json={
+        "username": unique_user,
+        "email": unique_email,
+        "password": "securepass123",
+        "full_name": "Dr. Kerem Arslan",
+        "role": "nutritionist",
+        "farm_name": "Anadolu Damızlık Süt Çiftliği"
+    })
+    assert res_reg.status_code == 200
+    reg_data = res_reg.json()
+    assert reg_data["status"] == "success"
+    assert reg_data["user"]["username"] == unique_user
+    assert reg_data["user"]["role"] == "nutritionist"
+    assert reg_data["user"]["farm_name"] == "Anadolu Damızlık Süt Çiftliği"
+
+    # 4. Test duplicate registration fails
+    res_dup = client.post("/api/auth/register", json={
+        "username": unique_user,
+        "email": unique_email,
+        "password": "securepass123",
+        "full_name": "İkinci Deneme"
+    })
+    assert res_dup.status_code == 200
+    assert res_dup.json()["status"] == "error"
+
+    # 5. Test active user profile /api/auth/me
+    res_me = client.get("/api/auth/me")
+    assert res_me.status_code == 200
+    assert res_me.json()["user"]["username"] == unique_user
+
+    # 6. Test logout
+    res_logout = client.post("/api/auth/logout")
+    assert res_logout.status_code == 200
+    assert res_logout.json()["status"] == "success"
+
+
 
 
 

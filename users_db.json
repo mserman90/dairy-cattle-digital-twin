@@ -1,0 +1,212 @@
+{
+  "users": {
+    "vet_01": {
+      "id": "vet_01",
+      "username": "vet",
+      "email": "vet@agritwin.com",
+      "password_hash": "bff06be14b2ef7d89de0e6ca6022d50d4ea23109a5cadc80581c697a45f92510",
+      "salt": "6013aad741251696ee78ad5926fb7a89",
+      "full_name": "Dr. Mehmet Yılmaz",
+      "role": "vet",
+      "role_title": "Baş Veteriner Hekim & Sürü Danışmanı",
+      "avatar": "🩺",
+      "farm_name": "AgriTwin Akıllı Çiftlik A.Ş.",
+      "department": "Sürü Sağlığı & Biyogüvenlik",
+      "permissions": [
+        "Reçete Yazma",
+        "Karantina Kilidi",
+        "Doğum & Distosi Müdahalesi",
+        "Brix Kolostrum Onayı"
+      ],
+      "created_at": "2026-01-01T08:00:00",
+      "last_login": "2026-10-29T23:03:16.700396"
+    },
+    "mgr_01": {
+      "id": "mgr_01",
+      "username": "manager",
+      "email": "manager@agritwin.com",
+      "password_hash": "baddc83b5a8bbf02e94f49700a0fb08df56e2454df5b3466752eb879c60fb826",
+      "salt": "bc80c83e8fa0a2ab0c4c5100c5254e46",
+      "full_name": "Selim Aksoy",
+      "role": "manager",
+      "role_title": "Çiftlik Müdürü & Kıdemli Zooteknist",
+      "avatar": "🚜",
+      "farm_name": "AgriTwin Akıllı Çiftlik A.Ş.",
+      "department": "Operasyon & TMR Rasyon Yönetimi",
+      "permissions": [
+        "Pareto Rasyon Uygulama",
+        "Robot Filo Kontrolü",
+        "Ayırma Kapısı Yönlendirme",
+        "Finansal ROI"
+      ],
+      "created_at": "2026-01-01T08:00:00",
+      "last_login": "2026-10-29T23:03:12.781704"
+    },
+    "eng_01": {
+      "id": "eng_01",
+      "username": "energy",
+      "email": "energy@agritwin.com",
+      "password_hash": "06e27da3f8a5a1e539fed850a358e604701c83029a9c1dee8e31d1a7e634d594",
+      "salt": "f492919d1c79c6de97b0789c25b579f1",
+      "full_name": "Müh. Emre Demir",
+      "role": "energy",
+      "role_title": "Biyogaz & Kojenerasyon Baş Mühendisi",
+      "avatar": "⚡",
+      "farm_name": "AgriTwin Akıllı Çiftlik A.Ş.",
+      "department": "Döngüsel Ekonomi & Kojenerasyon (CHP)",
+      "permissions": [
+        "CHP Jeneratör Ayarı",
+        "Biyogaz Basınç İzleme",
+        "Şebeke Elektrik Satışı",
+        "Karbon Kredisi"
+      ],
+      "created_at": "2026-01-01T08:00:00",
+      "last_login": "2026-10-29T22:54:59.024947"
+    },
+    "gen_01": {
+      "id": "gen_01",
+      "username": "genetics",
+      "email": "genetics@agritwin.com",
+      "password_hash": "32ef49cb4d0c1649d4b9f31051d8199f8f4d0a6038c1e212852bcc0dc38c220f",
+      "salt": "f578b558725847a11a195c97e64e971b",
+      "full_name": "Doç. Dr. Ayşe Kaya",
+      "role": "genetics",
+      "role_title": "Genomik Damızlık & Islah Danışmanı",
+      "avatar": "🧬",
+      "farm_name": "AgriTwin Akıllı Çiftlik A.Ş.",
+      "department": "Genomik Damızlık & Akıllı Çiftleştirme",
+      "permissions": [
+        "Net Merit ($NM$) Seleksiyonu",
+        "Akrabalık (Inbreeding) Denetimi",
+        "Dişi Ayrıştırılmış Boğa Kataloğu"
+      ],
+      "created_at": "2026-01-01T08:00:00",
+      "last_login": "2026-10-29T22:54:59.075582"
+    },
+    "user_04bfba11": {
+      "id": "user_04bfba11",
+      "username": "ahmet_vet",
+      "email": "ahmet@ciftlik.com",
+      "password_hash": "6b04be8b052fb699e846822f446d350c32a187092e92389280205073e5f128cd",
+      "salt": "6fbc098dd6b0dd3cf38d53185ab03a5e",
+      "full_name": "Dr. Ahmet Demir",
+      "role": "vet",
+      "role_title": "Baş Veteriner Hekim & Sürü Danışmanı",
+      "avatar": "🩺",
+      "farm_name": "Demir Hayvancılık",
+      "department": "Sürü Sağlığı & Biyogüvenlik",
+      "permissions": [
+        "Reçete Yazma",
+        "Karantina Kilidi",
+        "Doğum & Distosi Müdahalesi",
+        "Brix Kolostrum Onayı"
+      ],
+      "created_at": "2026-10-29T22:54:59.180641",
+      "last_login": "2026-10-29T22:54:59.233343"
+    },
+    "user_1993ef9a": {
+      "id": "user_1993ef9a",
+      "username": "test_vet_99",
+      "email": "test99@agritwin.com",
+      "password_hash": "70eaba9c3f2116d934e3d1eef1a6464f4cef82e4a820e8b79c3fc392ea52ec9e",
+      "salt": "bb91e217a9a03a4e17da4e4a8ca7504d",
+      "full_name": "Dr. Kerem Arslan",
+      "role": "nutritionist",
+      "role_title": "Sürü Besleme ve Rasyon Uzmanı",
+      "avatar": "🌾",
+      "farm_name": "Anadolu Damızlık Süt Çiftliği",
+      "department": "Besleme & Enterik Metan Azaltımı",
+      "permissions": [
+        "TMR Rasyon Optimizasyonu",
+        "Rumen pH Takibi",
+        "Yem Depo & Silo Yönetimi"
+      ],
+      "created_at": "2026-10-29T22:55:53.574509",
+      "last_login": "2026-10-29T22:55:53.574517"
+    },
+    "user_15034b8a": {
+      "id": "user_15034b8a",
+      "username": "genc_aaa670",
+      "email": "genc_aaa670@ciftlik.com",
+      "password_hash": "8946534307d11a552824e87016f37d569b48c23d4d11167c54b1c378023c225a",
+      "salt": "504e9e510ed3d09ef88fbaf4ffe2765e",
+      "full_name": "Dr. Zeynep Çelik",
+      "role": "vet",
+      "role_title": "Baş Veteriner Hekim & Sürü Danışmanı",
+      "avatar": "🩺",
+      "farm_name": "Çelik Damızlık İnek Çiftliği",
+      "department": "Sürü Sağlığı & Biyogüvenlik",
+      "permissions": [
+        "Reçete Yazma",
+        "Karantina Kilidi",
+        "Doğum & Distosi Müdahalesi",
+        "Brix Kolostrum Onayı"
+      ],
+      "created_at": "2026-10-29T23:01:35.000473",
+      "last_login": "2026-10-29T23:01:35.000484"
+    },
+    "user_c7f81001": {
+      "id": "user_c7f81001",
+      "username": "genc_83ac32",
+      "email": "genc_83ac32@ciftlik.com",
+      "password_hash": "5e657bc1435649ce26b07235f93f090acd15552f3e84a25cf8cb4b1d8b7b2582",
+      "salt": "2275b89addf0cd06b7caf62e3f9acf27",
+      "full_name": "Dr. Zeynep Çelik",
+      "role": "vet",
+      "role_title": "Baş Veteriner Hekim & Sürü Danışmanı",
+      "avatar": "🩺",
+      "farm_name": "Çelik Damızlık İnek Çiftliği",
+      "department": "Sürü Sağlığı & Biyogüvenlik",
+      "permissions": [
+        "Reçete Yazma",
+        "Karantina Kilidi",
+        "Doğum & Distosi Müdahalesi",
+        "Brix Kolostrum Onayı"
+      ],
+      "created_at": "2026-10-29T23:02:41.934951",
+      "last_login": "2026-10-29T23:02:41.934960"
+    },
+    "user_c4d55620": {
+      "id": "user_c4d55620",
+      "username": "genc_0cacc3",
+      "email": "genc_0cacc3@ciftlik.com",
+      "password_hash": "d66754694c87536f246bf8f808d19f9cff90c97bb489efa3266b70b162762e47",
+      "salt": "2eef37119a542af80bec56d468ff6f2e",
+      "full_name": "Dr. Zeynep Çelik",
+      "role": "vet",
+      "role_title": "Baş Veteriner Hekim & Sürü Danışmanı",
+      "avatar": "🩺",
+      "farm_name": "Çelik Damızlık İnek Çiftliği",
+      "department": "Sürü Sağlığı & Biyogüvenlik",
+      "permissions": [
+        "Reçete Yazma",
+        "Karantina Kilidi",
+        "Doğum & Distosi Müdahalesi",
+        "Brix Kolostrum Onayı"
+      ],
+      "created_at": "2026-10-29T23:03:14.054666",
+      "last_login": "2026-10-29T23:03:14.054676"
+    },
+    "user_3d051b62": {
+      "id": "user_3d051b62",
+      "username": "user_613ab926",
+      "email": "user_613ab926@agritwin.com",
+      "password_hash": "69e2f82876d00948ba92fca20e9b020eb31d84f0103541482d2c458dab9ab538",
+      "salt": "89536e4b77ed65e6a86122d8de5f72a1",
+      "full_name": "Dr. Kerem Arslan",
+      "role": "nutritionist",
+      "role_title": "Sürü Besleme ve Rasyon Uzmanı",
+      "avatar": "🌾",
+      "farm_name": "Anadolu Damızlık Süt Çiftliği",
+      "department": "Besleme & Enterik Metan Azaltımı",
+      "permissions": [
+        "TMR Rasyon Optimizasyonu",
+        "Rumen pH Takibi",
+        "Yem Depo & Silo Yönetimi"
+      ],
+      "created_at": "2026-10-29T23:03:16.808828",
+      "last_login": "2026-10-29T23:03:16.808837"
+    }
+  },
+  "updated_at": "2026-10-29T23:03:16.809203"
+}

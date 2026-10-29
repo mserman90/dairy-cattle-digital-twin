@@ -737,6 +737,7 @@ document.addEventListener("DOMContentLoaded", () => {
   fetchSpatialRtls();
   startAutoPoll();
   initAcademicTooltips();
+  initAuth();
 });
 
 function startAutoPoll() {
@@ -3394,4 +3395,453 @@ function renderDevicesModal() {
   });
 
   container.innerHTML = cardsHtml;
+}
+
+// =========================================================================
+// KULLANICI KİMLİK, KAYIT, GİRİŞ VE OTURUM YÖNETİMİ (AUTH ENGINE)
+// =========================================================================
+
+let currentUser = null;
+let registeredLocalUsers = [];
+
+function initAuth() {
+  // Load registered users from localStorage (offline fallback)
+  try {
+    const storedUsers = localStorage.getItem("agritwin_registered_users");
+    if (storedUsers) {
+      registeredLocalUsers = JSON.parse(storedUsers);
+    }
+  } catch (e) {
+    registeredLocalUsers = [];
+  }
+
+  // Load active session from localStorage
+  try {
+    const storedSession = localStorage.getItem("agritwin_session");
+    if (storedSession) {
+      currentUser = JSON.parse(storedSession);
+    }
+  } catch (e) {
+    currentUser = null;
+  }
+
+  // If no session, fallback to default demo persona (Dr. Mehmet Yılmaz)
+  if (!currentUser) {
+    currentUser = {
+      id: "vet_01",
+      username: "vet",
+      email: "vet@agritwin.com",
+      full_name: "Dr. Mehmet Yılmaz",
+      role: "vet",
+      role_title: "Baş Veteriner Hekim & Sürü Danışmanı",
+      avatar: "🩺",
+      farm_name: "AgriTwin Akıllı Çiftlik A.Ş.",
+      department: "Sürü Sağlığı & Biyogüvenlik",
+      permissions: ["Reçete Yazma", "Karantina Kilidi", "Doğum & Distosi Müdahalesi", "Brix Kolostrum Onayı"]
+    };
+  }
+
+  updateAuthUI(currentUser);
+}
+
+function openAuthModal(tabName = "login") {
+  const modal = document.getElementById("demoLoginModal");
+  if (modal) {
+    modal.classList.add("active");
+    switchAuthTab(tabName);
+  }
+}
+
+function closeAuthModal(e) {
+  if (e && e.target && (e.target.id === "demoLoginModal" || e.target.classList.contains("modal-backdrop"))) {
+    closeAuthModalDirect();
+  }
+}
+
+function closeAuthModalDirect() {
+  const modal = document.getElementById("demoLoginModal");
+  if (modal) {
+    modal.classList.remove("active");
+  }
+}
+
+// Backwards compatibility aliases
+function openDemoLoginModal() {
+  openAuthModal("demo");
+}
+function closeDemoLoginModal(e) {
+  closeAuthModal(e);
+}
+function closeDemoLoginModalDirect() {
+  closeAuthModalDirect();
+}
+
+function switchAuthTab(tabName) {
+  // Tabs: login, register, demo, profile
+  const validTabs = ["login", "register", "demo", "profile"];
+  if (!validTabs.includes(tabName)) tabName = "login";
+
+  validTabs.forEach(t => {
+    const btn = document.getElementById(`authTabBtn_${t}`);
+    const panel = document.getElementById(`authTab_${t}`);
+    if (btn) {
+      if (t === tabName) btn.classList.add("active");
+      else btn.classList.remove("active");
+    }
+    if (panel) {
+      if (t === tabName) panel.classList.add("active");
+      else panel.classList.remove("active");
+    }
+  });
+
+  // Clear alerts
+  hideAuthAlert("loginAlertBox");
+  hideAuthAlert("regAlertBox");
+
+  if (tabName === "profile" && currentUser) {
+    renderProfileTab(currentUser);
+  }
+}
+
+function togglePasswordVisibility(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  if (input.type === "password") {
+    input.type = "text";
+    btn.textContent = "🙈";
+  } else {
+    input.type = "password";
+    btn.textContent = "👁️";
+  }
+}
+
+function fillDemoCredentials(role) {
+  const map = {
+    vet: { user: "vet", pass: "demo123" },
+    manager: { user: "manager", pass: "demo123" },
+    energy: { user: "energy", pass: "demo123" },
+    genetics: { user: "genetics", pass: "demo123" }
+  };
+  const acc = map[role] || map.vet;
+  const userInput = document.getElementById("loginUsername");
+  const passInput = document.getElementById("loginPassword");
+  if (userInput) userInput.value = acc.user;
+  if (passInput) passInput.value = acc.pass;
+
+  showAuthAlert("loginAlertBox", `💡 ${acc.user} demo bilgileri dolduruldu. 'Giriş Yap' butonuna basabilirsiniz.`, "success");
+}
+
+function showAuthAlert(containerId, message, type = "error") {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.className = `auth-alert ${type}`;
+  el.textContent = message;
+  el.style.display = "block";
+}
+
+function hideAuthAlert(containerId) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.style.display = "none";
+  el.textContent = "";
+}
+
+async function submitLoginForm(e) {
+  if (e && e.preventDefault) e.preventDefault();
+
+  const userInput = document.getElementById("loginUsername");
+  const passInput = document.getElementById("loginPassword");
+  if (!userInput || !passInput) return;
+
+  const usernameOrEmail = userInput.value.trim();
+  const password = passInput.value.trim();
+
+  if (!usernameOrEmail || !password) {
+    showAuthAlert("loginAlertBox", "Lütfen kullanıcı adı ve parolanızı giriniz.", "error");
+    return;
+  }
+
+  // 1. Try backend API first
+  let loginSuccess = false;
+  let userObj = null;
+
+  try {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username_or_email: usernameOrEmail,
+        password: password
+      })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.status === "success" && data.user) {
+        loginSuccess = true;
+        userObj = data.user;
+        if (data.token) {
+          localStorage.setItem("agritwin_token", data.token);
+        }
+      } else {
+        showAuthAlert("loginAlertBox", data.message || "Giriş başarısız.", "error");
+        return;
+      }
+    }
+  } catch (err) {
+    // Backend offline / static mode fallback
+  }
+
+  // 2. Client-side Offline Fallback verification
+  if (!loginSuccess) {
+    // Check demo accounts (password: demo123)
+    const demoAccounts = {
+      vet: { name: "Dr. Mehmet Yılmaz", email: "vet@agritwin.com", role: "vet", title: "Baş Veteriner Hekim & Sürü Danışmanı", avatar: "🩺", farm: "AgriTwin Akıllı Çiftlik A.Ş.", dept: "Sürü Sağlığı & Biyogüvenlik" },
+      manager: { name: "Selim Aksoy", email: "manager@agritwin.com", role: "manager", title: "Çiftlik Müdürü & Kıdemli Zooteknist", avatar: "🚜", farm: "AgriTwin Akıllı Çiftlik A.Ş.", dept: "Operasyon & TMR Rasyon Yönetimi" },
+      energy: { name: "Müh. Emre Demir", email: "energy@agritwin.com", role: "energy", title: "Biyogaz & Kojenerasyon Baş Mühendisi", avatar: "⚡", farm: "AgriTwin Akıllı Çiftlik A.Ş.", dept: "Döngüsel Ekonomi & Kojenerasyon (CHP)" },
+      genetics: { name: "Doç. Dr. Ayşe Kaya", email: "genetics@agritwin.com", role: "genetics", title: "Genomik Damızlık & Islah Danışmanı", avatar: "🧬", farm: "AgriTwin Akıllı Çiftlik A.Ş.", dept: "Genomik Damızlık & Akıllı Çiftleştirme" }
+    };
+
+    const q = usernameOrEmail.toLowerCase();
+    for (const [k, d] of Object.entries(demoAccounts)) {
+      if ((k === q || d.email === q) && password === "demo123") {
+        loginSuccess = true;
+        userObj = {
+          id: `demo_${k}`,
+          username: k,
+          email: d.email,
+          full_name: d.name,
+          role: d.role,
+          role_title: d.title,
+          avatar: d.avatar,
+          farm_name: d.farm,
+          department: d.dept,
+          permissions: DEMO_PERSONAS[k] ? DEMO_PERSONAS[k].permissions : ["Tüm Modüller"]
+        };
+        break;
+      }
+    }
+
+    // Check registered local users
+    if (!loginSuccess && registeredLocalUsers && registeredLocalUsers.length > 0) {
+      for (const u of registeredLocalUsers) {
+        if ((u.username.toLowerCase() === q || u.email.toLowerCase() === q) && u.password === password) {
+          loginSuccess = true;
+          userObj = u;
+          break;
+        }
+      }
+    }
+  }
+
+  if (loginSuccess && userObj) {
+    currentUser = userObj;
+    localStorage.setItem("agritwin_session", JSON.stringify(currentUser));
+    updateAuthUI(currentUser);
+
+    showAuthAlert("loginAlertBox", `✅ Giriş başarılı! Hoş geldiniz, ${currentUser.full_name}.`, "success");
+    setTimeout(() => {
+      switchAuthTab("profile");
+    }, 600);
+  } else {
+    showAuthAlert("loginAlertBox", "Hatalı kullanıcı adı veya parola! Demo hesaplar için 'vet' / 'demo123' deneyebilirsiniz.", "error");
+  }
+}
+
+async function submitRegisterForm(e) {
+  if (e && e.preventDefault) e.preventDefault();
+
+  const fullName = (document.getElementById("regFullName")?.value || "").trim();
+  const username = (document.getElementById("regUsername")?.value || "").trim();
+  const email = (document.getElementById("regEmail")?.value || "").trim();
+  const farmName = (document.getElementById("regFarmName")?.value || "AgriTwin Akıllı Çiftlik").trim();
+  const role = document.getElementById("regRole")?.value || "vet";
+  const password = document.getElementById("regPassword")?.value || "";
+  const passwordConfirm = document.getElementById("regPasswordConfirm")?.value || "";
+
+  // Validations
+  if (!fullName || !username || !email || !password) {
+    showAuthAlert("regAlertBox", "Lütfen tüm zorunlu (*) alanları doldurunuz.", "error");
+    return;
+  }
+  if (password.length < 6) {
+    showAuthAlert("regAlertBox", "Parola güvenlik gereği en az 6 karakter olmalıdır.", "error");
+    return;
+  }
+  if (password !== passwordConfirm) {
+    showAuthAlert("regAlertBox", "Girdiğiniz parolalar birbiriyle eşleşmiyor! Lütfen tekrar kontrol ediniz.", "error");
+    return;
+  }
+
+  // 1. Try backend API
+  let regSuccess = false;
+  let newUserObj = null;
+
+  try {
+    const res = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        full_name: fullName,
+        username: username,
+        email: email,
+        farm_name: farmName,
+        role: role,
+        password: password
+      })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.status === "success" && data.user) {
+        regSuccess = true;
+        newUserObj = data.user;
+        if (data.token) {
+          localStorage.setItem("agritwin_token", data.token);
+        }
+      } else {
+        showAuthAlert("regAlertBox", data.message || "Kayıt oluşturulamadı.", "error");
+        return;
+      }
+    }
+  } catch (err) {
+    // Backend offline / static mode fallback
+  }
+
+  // 2. Client-side Offline Fallback creation
+  if (!regSuccess) {
+    // Check username/email duplicate in local users
+    const exists = registeredLocalUsers.some(u => u.username.toLowerCase() === username.toLowerCase() || u.email.toLowerCase() === email.toLowerCase());
+    if (exists) {
+      showAuthAlert("regAlertBox", "Bu kullanıcı adı veya e-posta ile kayıtlı bir hesap zaten var.", "error");
+      return;
+    }
+
+    const roleMap = {
+      vet: { title: "Baş Veteriner Hekim & Sürü Danışmanı", avatar: "🩺", dept: "Sürü Sağlığı & Biyogüvenlik", perms: ["Reçete Yazma", "Karantina Kilidi", "Doğum & Distosi Müdahalesi", "Brix Kolostrum Onayı"] },
+      manager: { title: "Çiftlik Müdürü & Kıdemli Zooteknist", avatar: "🚜", dept: "Operasyon & TMR Rasyon Yönetimi", perms: ["Pareto Rasyon Uygulama", "Robot Filo Kontrolü", "Ayırma Kapısı Yönlendirme", "Finansal ROI"] },
+      energy: { title: "Biyogaz & Kojenerasyon Baş Mühendisi", avatar: "⚡", dept: "Döngüsel Ekonomi & Kojenerasyon (CHP)", perms: ["CHP Jeneratör Ayarı", "Biyogaz Basınç İzleme", "Şebeke Elektrik Satışı", "Karbon Kredisi"] },
+      genetics: { title: "Genomik Damızlık & Islah Danışmanı", avatar: "🧬", dept: "Genomik Damızlık & Akıllı Çiftleştirme", perms: ["Net Merit ($NM$) Seleksiyonu", "Akrabalık (Inbreeding) Denetimi", "Dişi Ayrıştırılmış Boğa Kataloğu"] },
+      nutritionist: { title: "Sürü Besleme ve Rasyon Uzmanı", avatar: "🌾", dept: "Besleme & Enterik Metan Azaltımı", perms: ["TMR Rasyon Optimizasyonu", "Rumen pH Takibi", "Yem Depo & Silo Yönetimi"] },
+      operator: { title: "Çiftlik Otomasyon Teknisyeni", avatar: "🔧", dept: "Teknik Bakım & Sensör Kalibrasyonu", perms: ["Cihaz Aktüatör Testi", "Sensör Kalibrasyonu", "RTLS Ağ Yönetimi"] }
+    };
+
+    const rMeta = roleMap[role] || roleMap.vet;
+    newUserObj = {
+      id: `local_${Date.now()}`,
+      username: username,
+      email: email,
+      full_name: fullName,
+      password: password,
+      role: role,
+      role_title: rMeta.title,
+      avatar: rMeta.avatar,
+      farm_name: farmName,
+      department: rMeta.dept,
+      permissions: rMeta.perms,
+      created_at: new Date().toISOString()
+    };
+
+    registeredLocalUsers.push(newUserObj);
+    localStorage.setItem("agritwin_registered_users", JSON.stringify(registeredLocalUsers));
+    regSuccess = true;
+  }
+
+  if (regSuccess && newUserObj) {
+    currentUser = newUserObj;
+    localStorage.setItem("agritwin_session", JSON.stringify(currentUser));
+    updateAuthUI(currentUser);
+
+    showAuthAlert("regAlertBox", `🎉 Tebrikler! Hesabınız başarıyla oluşturuldu. Hoş geldiniz, ${fullName}!`, "success");
+    setTimeout(() => {
+      switchAuthTab("profile");
+    }, 700);
+  }
+}
+
+async function logoutUser() {
+  try {
+    await fetch("/api/auth/logout", { method: "POST" });
+  } catch (e) {}
+
+  localStorage.removeItem("agritwin_session");
+  localStorage.removeItem("agritwin_token");
+
+  // Reset to guest / default
+  currentUser = {
+    id: "vet_01",
+    username: "vet",
+    email: "vet@agritwin.com",
+    full_name: "Dr. Mehmet Yılmaz",
+    role: "vet",
+    role_title: "Baş Veteriner Hekim & Sürü Danışmanı",
+    avatar: "🩺",
+    farm_name: "AgriTwin Akıllı Çiftlik A.Ş.",
+    department: "Sürü Sağlığı & Biyogüvenlik",
+    permissions: ["Reçete Yazma", "Karantina Kilidi", "Doğum & Distosi Müdahalesi", "Brix Kolostrum Onayı"]
+  };
+
+  updateAuthUI(currentUser);
+  switchAuthTab("login");
+  showAuthAlert("loginAlertBox", "ℹ️ Oturumunuz güvenli bir şekilde kapatıldı.", "success");
+}
+
+function updateAuthUI(user) {
+  if (!user) return;
+
+  // Header Elements
+  const avatarEl = document.getElementById("demoUserAvatar");
+  const nameEl = document.getElementById("demoUserName");
+  const roleEl = document.getElementById("demoUserRole");
+  const statusBadge = document.getElementById("authActiveUserStatus");
+
+  if (avatarEl) avatarEl.textContent = user.avatar || "👤";
+  if (nameEl) nameEl.textContent = user.full_name || user.username;
+  if (roleEl) roleEl.textContent = user.role_title ? user.role_title.split("&")[0].trim() : "Kullanıcı";
+  if (statusBadge) statusBadge.textContent = `Aktif: ${user.full_name}`;
+
+  // Update currentDemoPersona if role matches
+  if (user.role && DEMO_PERSONAS[user.role]) {
+    currentDemoPersona = DEMO_PERSONAS[user.role];
+  } else {
+    currentDemoPersona = {
+      name: user.full_name,
+      role: user.role_title || user.role,
+      fullRole: user.role_title || user.role,
+      avatar: user.avatar || "👤",
+      department: user.department || user.farm_name,
+      permissions: user.permissions || ["Tüm Modüller"]
+    };
+  }
+
+  // AI Danisman Announcement
+  const chat = document.getElementById("aiChatResponse");
+  if (chat) {
+    chat.innerHTML = `👤 <strong>Kullanıcı Oturumu Aktif:</strong> <strong>${user.full_name}</strong> (${user.role_title})<br>` +
+      `- <strong>İşletme / Çiftlik:</strong> ${user.farm_name}<br>` +
+      `- <strong>Departman:</strong> ${user.department}<br>` +
+      `- <strong>Yetkiler:</strong> ${(user.permissions || []).map(p => `<code>${p}</code>`).join(" ")}<br>` +
+      `💡 <em>Sürü sağlık durumu, telemetri anomalileri veya Pareto rasyon analizlerini inceleyebilirsiniz.</em>`;
+  }
+}
+
+function renderProfileTab(user) {
+  const avatar = document.getElementById("profAvatar");
+  const fullName = document.getElementById("profFullName");
+  const roleTitle = document.getElementById("profRoleTitle");
+  const farmName = document.getElementById("profFarmName");
+  const username = document.getElementById("profUsername");
+  const email = document.getElementById("profEmail");
+  const dept = document.getElementById("profDept");
+  const perms = document.getElementById("profPermissions");
+
+  if (avatar) avatar.textContent = user.avatar || "👤";
+  if (fullName) fullName.textContent = user.full_name;
+  if (roleTitle) roleTitle.textContent = user.role_title || user.role;
+  if (farmName) farmName.textContent = `🏡 ${user.farm_name || "AgriTwin Akıllı Çiftlik"}`;
+  if (username) username.textContent = user.username;
+  if (email) email.textContent = user.email;
+  if (dept) dept.textContent = user.department;
+
+  if (perms && user.permissions) {
+    perms.innerHTML = user.permissions.map(p => `<span>${p}</span>`).join(" ");
+  }
 }

@@ -15,6 +15,9 @@ from spatial_rtls import rtls_engine
 from ration_optimizer import TMRRationOptimizer
 from calving_twin import CalvingDystociaEngine
 from genomic_breeding_twin import GenomicBreedingEngine
+from auth import (
+    auth_manager, UserProfile, UserRegisterRequest, UserLoginRequest, AuthResponse, ROLE_DETAILS
+)
 
 class AssistantQueryRequest(BaseModel):
     query: str
@@ -313,7 +316,45 @@ def get_demo_personas():
 def switch_demo_persona(req: SwitchPersonaRequest):
     """Aktif demo kullanıcısını değiştirir"""
     persona_id = req.persona_id
-    return {"status": "success", "active_persona": persona_id}
+    user = auth_manager.switch_to_persona(persona_id)
+    return {
+        "status": "success",
+        "active_persona": persona_id,
+        "user": user
+    }
+
+# =========================================================================
+# KULLANICI KAYDI, GİRİŞİ VE KİMLİK YÖNETİMİ ENDPOINTLERİ
+# =========================================================================
+
+@app.post("/api/auth/register", response_model=AuthResponse)
+def register(req: UserRegisterRequest):
+    """Yeni kullanıcı ve çiftlik hesabı kaydı oluşturur"""
+    return auth_manager.register_user(req)
+
+@app.post("/api/auth/login", response_model=AuthResponse)
+def login(req: UserLoginRequest):
+    """Kullanıcı adı/e-posta ve parola ile oturum açar"""
+    return auth_manager.login_user(req)
+
+@app.get("/api/auth/me")
+def get_current_user_profile():
+    """Aktif oturumdaki kullanıcının profil ve yetkilerini döner"""
+    user = auth_manager.get_current_user()
+    if not user:
+        raise HTTPException(status_code=401, detail="Oturum açılmamış")
+    return {"status": "success", "user": user}
+
+@app.post("/api/auth/logout")
+def logout():
+    """Aktif oturumu sonlandırır"""
+    auth_manager.logout_user()
+    return {"status": "success", "message": "Oturum başarıyla kapatıldı"}
+
+@app.get("/api/auth/roles")
+def get_available_roles():
+    """Sistemde tanımlı uzmanlık ve çiftlik rollerini döner"""
+    return {"status": "success", "roles": ROLE_DETAILS}
 
 # Mount static files
 static_dir = os.path.join(os.path.dirname(__file__), "static")

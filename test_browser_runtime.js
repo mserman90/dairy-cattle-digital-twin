@@ -55,6 +55,15 @@ global.window = {
 };
 global.alert = (msg) => {};
 
+const storageMap = new Map();
+global.localStorage = {
+  getItem: (k) => storageMap.has(k) ? storageMap.get(k) : null,
+  setItem: (k, v) => storageMap.set(k, String(v)),
+  removeItem: (k) => storageMap.delete(k),
+  clear: () => storageMap.clear()
+};
+global.window.localStorage = global.localStorage;
+
 global.fetch = () => Promise.reject(new Error("Simulating Offline/GitHub Pages static mode"));
 global.navigator = { clipboard: { writeText: () => Promise.resolve() } };
 global.URL = { createObjectURL: () => 'blob:mock', revokeObjectURL: () => {} };
@@ -94,7 +103,7 @@ openGenomicsModal().then(() => {
   // 5. openCalvingModal()
   console.log("Testing 5. openCalvingModal()...");
   return openCalvingModal();
-}).then(() => {
+}).then(async () => {
   console.log("  calvingModal active?", getMockElement("calvingModal").classList.contains("active"));
   closeCalvingModalDirect();
   console.log("  calvingModal closed?", !getMockElement("calvingModal").classList.contains("active"));
@@ -102,7 +111,7 @@ openGenomicsModal().then(() => {
   // 6. openRoboticsModal()
   console.log("Testing 6. openRoboticsModal()...");
   return openRoboticsModal();
-}).then(() => {
+}).then(async () => {
   console.log("  roboticsModal active?", getMockElement("roboticsModal").classList.contains("active"));
   closeRoboticsModalDirect();
   console.log("  roboticsModal closed?", !getMockElement("roboticsModal").classList.contains("active"));
@@ -110,7 +119,7 @@ openGenomicsModal().then(() => {
   // 7. openEnergyModal()
   console.log("Testing 7. openEnergyModal()...");
   return openEnergyModal();
-}).then(() => {
+}).then(async () => {
   console.log("  energyModal active?", getMockElement("energyModal").classList.contains("active"));
   closeEnergyModalDirect();
   console.log("  energyModal closed?", !getMockElement("energyModal").classList.contains("active"));
@@ -118,7 +127,7 @@ openGenomicsModal().then(() => {
   // 8. openRationModal()
   console.log("Testing 8. openRationModal()...");
   return openRationModal();
-}).then(() => {
+}).then(async () => {
   console.log("  rationModal active?", getMockElement("rationModal").classList.contains("active"));
   closeRationModalDirect();
   console.log("  rationModal closed?", !getMockElement("rationModal").classList.contains("active"));
@@ -126,7 +135,7 @@ openGenomicsModal().then(() => {
   // 9. openReportModal() & report generation
   console.log("Testing 9. openReportModal()...");
   return openReportModal();
-}).then(() => {
+}).then(async () => {
   console.log("  reportModal active?", getMockElement("reportModal").classList.contains("active"));
   const reportMd = generateDailyAuditReportMarkdown();
   console.log("  Generated Report length:", reportMd.length, "characters");
@@ -218,6 +227,23 @@ openGenomicsModal().then(() => {
   sendDeviceAction("DEV-MISTING-SYS", "PULSE_MIST");
   closeDevicesModalDirect();
   console.log("  devicesModal closed?", !getMockElement("devicesModal").classList.contains("active"));
+
+  // 18. Authentication Engine (User Registration & Login & Session)
+  console.log("Testing 18. Authentication Engine (Register, Login, Session, Tabs)...");
+  openAuthModal("login");
+  console.log("  authModal active?", getMockElement("demoLoginModal").classList.contains("active"));
+  switchAuthTab("register");
+  switchAuthTab("demo");
+  switchAuthTab("login");
+  fillDemoCredentials("manager");
+  console.log("  Login username filled:", getMockElement("loginUsername").value);
+  await submitLoginForm();
+  console.log("  Current logged-in user:", currentUser ? currentUser.full_name : "none");
+  console.log("  Header user name updated:", getMockElement("demoUserName").textContent);
+  await logoutUser();
+  console.log("  User logged out, active name:", getMockElement("demoUserName").textContent);
+  closeAuthModalDirect();
+  console.log("  authModal closed?", !getMockElement("demoLoginModal").classList.contains("active"));
 
   console.log("\n>>> ALL TESTS COMPLETED SUCCESSFULLY! <<<");
 }).catch(err => {
