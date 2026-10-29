@@ -2872,3 +2872,83 @@ async function startGuidedDemoTour() {
   }
   advanceStep();
 }
+
+
+// ============================================================================
+// ACADEMIC USER GUIDE MODAL CONTROLLER (FAZ 17)
+// ============================================================================
+function openGuideModal() {
+  const modal = document.getElementById("guideModal");
+  if (modal) {
+    modal.classList.add("active");
+  }
+}
+
+function closeGuideModal(event) {
+  if (event.target.id === "guideModal") {
+    closeGuideModalDirect();
+  }
+}
+
+function closeGuideModalDirect() {
+  const modal = document.getElementById("guideModal");
+  if (modal) {
+    modal.classList.remove("active");
+  }
+}
+
+function selectGuideTab(tabId) {
+  // Update sidebar active state
+  const navItems = document.querySelectorAll("#guideSidebarNav .guide-nav-item");
+  navItems.forEach(item => {
+    if (item.getAttribute("onclick") && item.getAttribute("onclick").includes(tabId)) {
+      item.classList.add("active");
+    } else {
+      item.classList.remove("active");
+    }
+  });
+
+  // Update section visibility
+  const sections = document.querySelectorAll("#guideContentArea .guide-section");
+  sections.forEach(sec => {
+    if (sec.id === `sec-${tabId}`) {
+      sec.classList.add("active");
+    } else {
+      sec.classList.remove("active");
+    }
+  });
+
+  // Scroll content to top
+  const contentArea = document.getElementById("guideContentArea");
+  if (contentArea) contentArea.scrollTop = 0;
+}
+
+function filterGuideContent(query) {
+  const q = (query || "").toLowerCase().trim();
+  const sections = document.querySelectorAll("#guideContentArea .guide-section");
+  const navItems = document.querySelectorAll("#guideSidebarNav .guide-nav-item");
+
+  if (!q) {
+    navItems.forEach(i => i.style.display = "");
+    return;
+  }
+
+  let firstMatchId = null;
+
+  sections.forEach(sec => {
+    const text = sec.textContent.toLowerCase();
+    const secId = sec.id.replace("sec-", "");
+    const matchingNav = Array.from(navItems).find(i => i.getAttribute("onclick") && i.getAttribute("onclick").includes(secId));
+
+    if (text.includes(q)) {
+      if (matchingNav) matchingNav.style.display = "";
+      if (!firstMatchId) firstMatchId = secId;
+    } else {
+      if (matchingNav) matchingNav.style.display = "none";
+    }
+  });
+
+  if (firstMatchId) {
+    selectGuideTab(firstMatchId);
+  }
+}
